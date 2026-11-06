@@ -2,12 +2,14 @@ import { useEffect } from "react";
 import Lenis from "lenis";
 import { gsap, ScrollTrigger } from "./gsap";
 import { INTRO_PLAYS, onOpen } from "./intro";
+export const smoothScroll: { lenis: Lenis | null } = { lenis: null };
 
 export function useSmoothScroll() {
   useEffect(() => {
     // mniejszy lerp = płynniej i z większym opóźnieniem
     const lenis = new Lenis({ lerp: 0.065, wheelMultiplier: 0.9 });
-    lenis.on("scroll", ScrollTrigger.update);
+      lenis.on("scroll", ScrollTrigger.update);
+      smoothScroll.lenis = lenis;
 
     // na czas intro scroll jest zablokowany, strona startuje od góry
     if (INTRO_PLAYS) {
@@ -23,6 +25,7 @@ export function useSmoothScroll() {
     return () => {
       offIntro();
       gsap.ticker.remove(tick);
+      smoothScroll.lenis = null;
       lenis.destroy();
     };
   }, []);
