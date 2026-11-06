@@ -11,11 +11,17 @@
 html {
   background: var(--color-ink);
   color: #f4f4f6;
+  scrollbar-width: none;
 }
 
 body {
   font-family: var(--font-sans);
   overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
 }
 
 @utility glass {
