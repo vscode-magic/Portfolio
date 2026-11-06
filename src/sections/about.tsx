@@ -33,7 +33,7 @@ export function About() {
               <Fade
                 key={f}
                 cursor
-                className="glass rounded-2xl px-6 py-4 text-white/70"
+                className="glass rounded-2xl px-6 py-4 text-white/70 transition-[padding,color] duration-500 ease-out hover:pl-8 hover:text-white"
               >
                 {f}
               </Fade>

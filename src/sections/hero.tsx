@@ -4,6 +4,7 @@ import { Reveal } from "../components/reveal";
 import { LanguageSwitch } from "../components/languageSwitch";
 import { Fade } from "../components/fade";
 import { useSectionHold } from "../lib/useSectionHold";
+import { ScrollHint } from "../components/scrollHint";
 import { useIntroGate } from "../lib/intro";
 
 export function Hero() {
@@ -49,6 +50,7 @@ export function Hero() {
           />
         </Fade>
       )}
+      <ScrollHint />
     </section>
   );
 }

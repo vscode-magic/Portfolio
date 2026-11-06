@@ -2,7 +2,8 @@
   "hero": {
     "eyebrow": "Full-stack developer",
     "title": "I build digital products that look and feel world-class.",
-    "subtitle": "Frontend, backend and infrastructure, from idea to deployment."
+    "subtitle": "Frontend, backend and infrastructure, from idea to deployment.",
+    "scroll": "Scroll"
   },
   "about": {
     "title": "About me",
@@ -39,7 +40,7 @@
       },
       "github": {
         "title": "GitHub",
-        "body": "Code hosting and the history of my projects, this portfolio included. You'll find all repositories on the Panpietruszka profile.",
+        "body": "Code hosting and the history of my projects, this portfolio included. You'll find all repositories on the vscode-magic profile.",
         "tags": ["Repositories", "Projects", "History"]
       },
       "git": {
@@ -76,6 +77,23 @@
         "summary": "This site: scroll-driven animation, a live coding activity feed and a FastAPI backend."
       }
     }
+  },
+  "contact": {
+    "eyebrow": "Contact",
+    "lead": "Open to new projects and collaboration. Email is the fastest way to reach me.",
+    "copy": "Click to copy",
+    "copied": "Copied",
+    "emailLabel": "Copy email address",
+    "links": {
+      "github": "GitHub",
+      "codetime": "CodeTime"
+    }
+  },
+  "footer": {
+    "rights": "© {{year}} Piotr",
+    "location": "Warsaw",
+    "built": "Built with React, TypeScript and GSAP",
+    "top": "Back to top"
   },
   "activity": {
     "eyebrow": "Activity",

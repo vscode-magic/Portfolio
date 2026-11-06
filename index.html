@@ -15,8 +15,29 @@
     }
   </style>
   <noscript>
-    <style>
-      #boot {
+        <style>
+                /* własny pasek (komponent Scrollbar) zastępuje natywny */
+        html,
+        body {
+          scrollbar-width: none !important;
+          -ms-overflow-style: none;
+        }
+        html::-webkit-scrollbar,
+        body::-webkit-scrollbar {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+        }
+        ::selection {
+          background: rgba(167, 139, 250, 0.35);
+          color: #fff;
+        }
+        :focus-visible {
+          outline: 2px solid rgba(167, 139, 250, 0.8);
+          outline-offset: 3px;
+        }
+          
+          #boot {
         display: none;
       }
     </style>

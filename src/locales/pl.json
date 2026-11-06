@@ -2,7 +2,8 @@
   "hero": {
     "eyebrow": "Full-stack developer",
     "title": "Tworzę produkty cyfrowe, które wyglądają i działają jak z najwyższej półki.",
-    "subtitle": "Frontend, backend i infrastruktura, od pomysłu po wdrożenie."
+    "subtitle": "Frontend, backend i infrastruktura, od pomysłu po wdrożenie.",
+    "scroll": "Przewiń"
   },
   "about": {
     "title": "O mnie",
@@ -39,7 +40,7 @@
       },
       "github": {
         "title": "GitHub",
-        "body": "Hosting kodu i historia moich projektów, także tego portfolio. Wszystkie repozytoria znajdziesz na profilu Panpietruszka.",
+        "body": "Hosting kodu i historia moich projektów, także tego portfolio. Wszystkie repozytoria znajdziesz na profilu vscode-magic.",
         "tags": ["Repozytoria", "Projekty", "Historia zmian"]
       },
       "git": {
@@ -76,6 +77,23 @@
         "summary": "Ta strona: animacje sterowane scrollem, aktywność z CodeTime i backend we FastAPI."
       }
     }
+  },
+  "contact": {
+    "eyebrow": "Kontakt",
+    "lead": "Jestem otwarty na nowe projekty i współpracę. Najszybciej złapiesz mnie mailem.",
+    "copy": "Kliknij, aby skopiować",
+    "copied": "Skopiowano",
+    "emailLabel": "Skopiuj adres e-mail",
+    "links": {
+      "github": "GitHub",
+      "codetime": "CodeTime"
+    }
+  },
+  "footer": {
+    "rights": "© {{year}} Piotr",
+    "location": "Warszawa",
+    "built": "Zbudowane w React, TypeScript i GSAP",
+    "top": "Do góry"
   },
   "activity": {
     "eyebrow": "Aktywność",

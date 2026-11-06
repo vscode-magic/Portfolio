@@ -6,6 +6,9 @@ import { About } from "./sections/about";
 import { IconVortex } from "./sections/iconVortex";
 import { CodeTime } from "./sections/codeTime";
 import { Projects } from "./sections/projects";
+import { Contact } from "./sections/contact";
+import { SiteFooter } from "./components/siteFooter";
+import { Scrollbar } from "./components/scrollbar";
 import { useSmoothScroll } from "./lib/useSmoothScroll";
 import {
   INTRO_PLAYS,
@@ -44,7 +47,10 @@ export default function App() {
         <IconVortex />
         <CodeTime />
         <Projects />
+        <Contact />
       </main>
+      <SiteFooter />
+      <Scrollbar />
     </>
   );
 }
