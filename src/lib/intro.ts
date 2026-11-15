@@ -1,10 +1,22 @@
 import { useSyncExternalStore } from "react";
 import { gsap, ScrollTrigger } from "./gsap";
 
-const KEY = "portfolioIntroSeen";
-const MAX_WAIT = 7000; // ms: po tym czasie ruszamy, nawet jeśli coś się nie doładowało
+/* =========================================================================
+   intro.ts: całe wejście na stronę w jednym pliku (zastępuje introFx.tsx)
 
-// Pełne intro: przy pierwszym wejściu w sesji, po twardym odświeżeniu albo z ?intro w adresie.
+   1. decyzja       czy gra pełne intro (pierwsza wizyta, Ctrl+F5, ?intro)
+   2. scena         stan czytany przez ambient.tsx w każdej klatce
+   3. start         zasłona z index.html + odświeżanie layoutu w tle (bez czekania)
+   4. bramki        kiedy hero pokazuje tekst, nawigację i odblokowuje scroll
+   5. scenariusze   playQuick (zwykłe wejście) i playIntro (pełne, ok. 5,2 s)
+   6. startEntrance jedyna funkcja, którą wywołuje app.tsx
+   ========================================================================= */
+
+/* ---------- 1. decyzja ---------- */
+
+const KEY = "portfolioIntroSeen";
+
+// Pełne intro: pierwsze wejście w sesji, po twardym odświeżeniu albo z ?intro w adresie.
 function decide(): boolean {
   if (typeof window === "undefined") return false;
   try {
@@ -26,21 +38,27 @@ if (typeof window !== "undefined") {
     const hard =
       (e.key === "F5" && (e.ctrlKey || e.shiftKey)) ||
       (key === "r" && e.shiftKey && (e.ctrlKey || e.metaKey));
-    if (hard) {
-      try {
-        sessionStorage.removeItem(KEY);
-      } catch {
-        /* ignorujemy */
-      }
+    if (!hard) return;
+    try {
+      sessionStorage.removeItem(KEY);
+    } catch {
+      /* ignorujemy */
     }
   });
 }
 
-// ---------- stan czytany przez ambient w każdej klatce ----------
+/* ---------- 2. scena (czytana przez ambient w każdej klatce) ---------- */
+
+// Stan końcowy: scena w spoczynku, tak jak ją widzi użytkownik po intro.
 const FINAL = {
   light: 1, // jasność warstw światła (rdzeń, halo)
   size: 1, // rozmiar światła: od iskry do pełnej plamy
   bloom: 1, // plamy wylatują ze światła na swoje miejsca
+  rays: 1, // smugi światła rozwijają się z lewego górnego rogu
+  burst: 1, // cząstki wylatują ze światła zapłonu na swoje miejsca
+  zoom: 0, // najazd kamery: scena startuje lekko powiększona
+  streak: 0, // anamorficzna smuga światła przy zapłonie
+  defocus: 0, // 0-1: rozmycie całej sceny (przeostrzanie ostrości)
   dust: 1, // jasność pyłu poza światłem
   script: 0, // 0-1: jak mocno scenariusz przejmuje sterowanie światłem
   path: 1, // postęp światła po ścieżce
@@ -48,10 +66,17 @@ const FINAL = {
   grain: 0, // dodatkowe ziarno
   boost: 0, // chwilowy "błysk" światła
 };
-const START = {
+
+// Stan początkowy pełnego intro: ciemność, rozmycie, zamknięta winieta.
+const START: typeof FINAL = {
   light: 0,
   size: 0.1,
   bloom: 0,
+  rays: 0,
+  burst: 0,
+  zoom: 1,
+  streak: 0,
+  defocus: 1,
   dust: 0,
   script: 1,
   path: 0,
@@ -60,12 +85,15 @@ const START = {
   boost: 0,
 };
 
-export const stage = { ...(INTRO_PLAYS ? START : { ...FINAL, light: 0 }) };
+export const stage: typeof FINAL = {
+  ...(INTRO_PLAYS ? START : { ...FINAL, light: 0, defocus: 0.7, zoom: 0.4 }),
+};
 
-// Trasa światła (0-1 ekranu): zapłon pośrodku, zjazd na lewo, przejazd wzdłuż nagłówka, wyjście w prawo
+// Trasa światła (0-1 ekranu): zapłon pośrodku, powolny zjazd w stronę nagłówka (lewy dół).
+// Pierwszy punkt to też miejsce, z którego wylatuje pył.
 export const INTRO_PATH = {
-  x: [0.5, 0.22, 0.1, 0.35, 0.6, 0.72],
-  y: [0.42, 0.6, 0.74, 0.76, 0.7, 0.46],
+  x: [0.5, 0.42, 0.32, 0.26],
+  y: [0.42, 0.52, 0.63, 0.68],
 };
 
 // ambient rejestruje tu falę światła, żeby intro mogło ją odpalić
@@ -73,39 +101,10 @@ export const hooks: {
   pulse?: (x: number, y: number, strength?: number) => void;
 } = {};
 
-// ---------- loader: zasłona z index.html + czekanie na gotowość strony ----------
-const frame = () =>
-  new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-
-let readyPromise: Promise<void> | null = null;
-
-// Czeka na: load, fonty, ułożenie layoutu i odświeżenie ScrollTriggerów (maks. MAX_WAIT)
-export function waitUntilReady(): Promise<void> {
-  if (!readyPromise) {
-    readyPromise = (async () => {
-      const loaded =
-        document.readyState === "complete"
-          ? Promise.resolve()
-          : new Promise<void>((resolve) =>
-              window.addEventListener("load", () => resolve(), { once: true }),
-            );
-      const fonts: Promise<unknown> =
-        document.fonts?.ready ?? Promise.resolve();
-      const timeout = new Promise<void>((resolve) =>
-        setTimeout(resolve, MAX_WAIT),
-      );
-      await Promise.race([Promise.all([loaded, fonts]), timeout]);
-      await frame();
-      await frame();
-      ScrollTrigger.refresh();
-      await frame();
-    })();
-  }
-  return readyPromise;
-}
+/* ---------- 3. start: zasłona z index.html i odświeżanie w tle ---------- */
 
 // Zdejmuje czarną zasłonę z index.html (duration 0 = od razu)
-export function liftBoot(duration: number) {
+function liftBoot(duration: number) {
   const el = document.getElementById("boot");
   if (!el) return;
   if (duration <= 0.02) {
@@ -121,12 +120,24 @@ export function liftBoot(duration: number) {
   });
 }
 
-// ---------- bramki: kiedy hero ma pokazać tekst, nawigację i odblokować scroll ----------
-type Gate = "text" | "chrome" | "done";
+// Intro NIE czeka na nic (fonty, obrazy, load). Layout, który mógł się przesunąć
+// po doładowaniu fontów i obrazów, przeliczamy w tle, bez blokowania startu.
+function refreshInBackground() {
+  const refresh = () => ScrollTrigger.refresh();
+  void document.fonts?.ready.then(refresh);
+  if (document.readyState !== "complete") {
+    window.addEventListener("load", refresh, { once: true });
+  }
+}
+
+/* ---------- 4. bramki ---------- */
+
+export type Gate = "text" | "chrome" | "done";
+
 const open: Record<Gate, boolean> = {
-  text: false,
-  chrome: false,
-  done: false,
+  text: false, // słowa w hero mogą się odsłaniać
+  chrome: false, // nawigacja
+  done: false, // scroll odblokowany, podpowiedź scrolla
 };
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
@@ -141,6 +152,7 @@ const openGate = (gate: Gate) => {
   open[gate] = true;
   emit();
 };
+const openAll = () => (["text", "chrome", "done"] as const).forEach(openGate);
 
 export function useIntroGate(gate: Gate): boolean {
   return useSyncExternalStore(
@@ -156,10 +168,9 @@ export function onOpen(gate: Gate, cb: () => void): () => void {
     return () => {};
   }
   const listener = () => {
-    if (open[gate]) {
-      cb();
-      listeners.delete(listener);
-    }
+    if (!open[gate]) return;
+    listeners.delete(listener);
+    cb();
   };
   listeners.add(listener);
   return () => {
@@ -167,91 +178,186 @@ export function onOpen(gate: Gate, cb: () => void): () => void {
   };
 }
 
-// ---------- zwykłe wejście (bez pełnego intro): światło rozwija się po zdjęciu zasłony ----------
-export function playQuick(): () => void {
-  openGate("text");
-  openGate("chrome");
-  openGate("done");
-  const tween = gsap.to(stage, {
-    light: 1,
-    duration: 2.2,
-    delay: 0.2,
-    ease: "power2.out",
-  });
-  return () => {
-    tween.kill();
-  };
+/* ---------- 5a. zwykłe wejście (bez pełnego intro) ---------- */
+
+// Światło rozwija się spokojnie po zdjęciu zasłony; tekst i scroll są od razu.
+function playQuick(): () => void {
+  openAll();
+  const tweens = [
+    gsap.to(stage, { light: 1, duration: 2.2, delay: 0.2, ease: "power2.out" }),
+    gsap.to(stage, {
+      defocus: 0,
+      duration: 2.8,
+      delay: 0.2,
+      ease: "power2.inOut",
+    }),
+    gsap.to(stage, { zoom: 0, duration: 3, delay: 0.2, ease: "power2.out" }),
+  ];
+  return () => tweens.forEach((t) => t.kill());
 }
 
-// ---------- scenariusz pełnego intro (ok. 4,5 s) ----------
+/* ---------- 5b. pełne intro: "wyostrzanie" (ok. 5,2 s) ---------- */
+
+// Koncepcja (inspirowana tłem rozruchu PS5, ok. 11-15 s filmu, bez logo): jeden,
+// ciągły ruch w czterech aktach, zbudowany wyłącznie z warstw ambientu. Dynamika
+// jest dopasowana do pomiaru tej sekwencji w filmie (jasność, ostrość, snop):
+//
+// 1. Mgła bokeh (0-1,6 s): ogromne, rozmyte krążki światła w ciemności, powoli
+//    jaśnieją do pierwszego szczytu. Okno widoku (winieta) jest wąskie i powoli się
+//    otwiera.
+// 2. Oddech (1,6-2,25 s): jasność szybko opada niemal do ciemności, a w tym
+//    samym czasie ostrość "doskakuje": krążki zamieniają się w drobne, ostre
+//    iskry. To właśnie ta chwila ciemności między aktami robi dynamikę.
+// 3. Snop (2,25-4,1 s): z lewego górnego rogu wychodzą smugi światła, pod nimi
+//    rozlewają się kolory, a światło (i mgła przy dole kadru) narasta do pełni.
+// 4. Treść (3,3 s+): gdy snop jest prawie pełny, wchodzi tekst, potem nawigacja,
+//    a na końcu światło wraca do kursora.
+//
+// Zasady, które robią "premium":
+// - krzywa jasności ma trzy odcinki, które łączą się w szczycie i dolince z
+//   zerową prędkością (sine), więc nigdzie nie ma szarpnięcia;
+// - pozostałe właściwości mają jedną płynną krzywą (bez sklejonych tweenów);
+// - akty zachodzą na siebie, a kamera płynie od pierwszej do ostatniej klatki;
+// - żadnych "zdarzeń" (fal, błysków): wszystko jest ciągłe;
+// - ostatni ruch (oddanie sterów kursorowi) kończy się równo z bramką "done",
+//   więc ostatnia klatka intro i pierwsza klatka strony są identyczne.
 const T = {
-  ignite: 0.5, // zapłon iskry
-  pulse: 0.95, // fala przy zapłonie
-  sweep: 1.1, // start przejazdu światła
-  sweepLen: 2.6,
-  text: 2.1, // odsłonięcie tekstu hero (światło dojeżdża na lewo)
-  bloom: 1.7, // plamy wylatują ze światła
-  vignette: 2.4, // otwarcie winiety
-  chrome: 3.2, // nawigacja
-  handoff: 3.4, // światło wraca do wędrowania / kursora
-  done: 4.3,
+  peak: 1.6, // pierwszy szczyt jasności: mgła bokeh w pełni
+  dip: 2.25, // dolinka jasności = moment wyostrzania
+  full: 3.7, // jasność w pełni
+  dust: 0.1, // pył wyłania się jako rozmyte krążki
+  burst: 0.3, // cząstki rozchodzą się od punktu zapłonu
+  vignette: 0.2, // okno widoku powoli się otwiera
+  grain: 0.5, // ziarno cichnie
+  zoom: 0, // kamera płynie przez cały czas
+  size: 0.4, // światło rośnie
+  focus: 1.45, // ostrość "doskakuje": krążki → iskry (krótko i zdecydowanie)
+  sweep: 1.0, // światło zsuwa się ku nagłówkowi
+  rays: 2.25, // snop z lewego górnego rogu
+  bloom: 2.4, // kolory rozlewają się
+  text: 3.3, // snop prawie pełny: wchodzi tekst hero
+  chrome: 4.2, // nawigacja
+  handoff: 4.0, // światło wraca do wędrowania / kursora
+  done: 5.2, // koniec: scroll odblokowany
 };
 
-export function playIntro(): () => void {
+// Poziomy jasności w trzech odcinkach krzywej "oddechu"
+const LIGHT = { peak: 0.55, dip: 0.15 };
+
+// Klawisze modyfikujące nie powinny przerywać intro (np. początek Ctrl+F5)
+const MODIFIERS = new Set(["Shift", "Control", "Alt", "Meta"]);
+const SKIP_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+
+function playIntro(): () => void {
   if (!INTRO_PLAYS) return () => {};
 
   Object.assign(stage, START);
   open.text = open.chrome = open.done = false;
   emit();
 
-  const w = () => window.innerWidth;
-  const h = () => window.innerHeight;
+  // chwilowe przycięcia (np. montowanie elementów) nie przeskakują animacji,
+  // tylko ją na moment wstrzymują
+  gsap.ticker.lagSmoothing(120, 33);
 
-  const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+  let finished = false;
+  let speedUp: gsap.core.Tween | null = null;
+
+  // Domyka scenę w stanie końcowym i oddaje stronę użytkownikowi.
+  // Wołane przez koniec osi czasu albo przez sprzątanie (HMR, odmontowanie),
+  // dzięki czemu scroll nigdy nie zostaje zablokowany.
   const finish = () => {
+    if (finished) return;
+    finished = true;
+    speedUp?.kill();
+    gsap.ticker.lagSmoothing(0);
     Object.assign(stage, FINAL);
-    openGate("text");
-    openGate("chrome");
-    openGate("done");
-    events.forEach((e) => window.removeEventListener(e, skip));
+    openAll();
+    SKIP_EVENTS.forEach((e) => window.removeEventListener(e, skip));
   };
 
   const tl = gsap.timeline({ onComplete: finish });
-  // dowolna interakcja przyspiesza intro (płynnie, bez skoku)
-  function skip() {
-    tl.timeScale(5);
+
+  // dowolna interakcja płynnie przyspiesza intro (rozpędzenie, nie skok)
+  function skip(e: Event) {
+    if (speedUp) return;
+    if (e.type === "keydown" && MODIFIERS.has((e as KeyboardEvent).key)) return;
+    speedUp = gsap.to(tl, {
+      timeScale: 6,
+      duration: 0.35,
+      ease: "power2.in",
+      overwrite: true,
+    });
   }
 
   tl
-    // zapłon: iskra rośnie, rdzeń i halo doganiają ją (różny wykładnik rozmiaru)
-    .to(stage, { light: 1, duration: 0.9, ease: "power2.out" }, T.ignite)
-    .to(stage, { size: 1, duration: 1.9, ease: "expo.out" }, T.ignite)
-    .call(() => hooks.pulse?.(w() * 0.5, h() * 0.42, 0.55), [], T.pulse)
-    .to(stage, { boost: 1, duration: 0.4, ease: "power2.out" }, T.pulse)
-    .to(stage, { boost: 0, duration: 1.3, ease: "power2.inOut" }, T.pulse + 0.4)
-    // światło przejeżdża po ekranie i zostawia ślad w pyle
-    .to(stage, { path: 1, duration: T.sweepLen, ease: "power2.inOut" }, T.sweep)
-    .to(stage, { dust: 1, duration: 1.8, ease: "power1.inOut" }, T.sweep + 0.5)
-    // plamy wylatują ze światła
-    .to(stage, { bloom: 1, duration: 2.2, ease: "power3.out" }, T.bloom)
-    .call(() => openGate("text"), [], T.text)
-    // wyciszenie: winieta i ziarno wracają do normy
-    .to(stage, { vignette: 0, duration: 1.6, ease: "power2.inOut" }, T.vignette)
+    // kamera: wolny najazd od pierwszej do ostatniej klatki
+    .to(stage, { zoom: 0, duration: 4.8, ease: "power2.out" }, 0)
+    // jasność: szczyt mgły, szybka dolinka przy wyostrzaniu, potem narastanie do pełni
+    // (sine.out na starcie, więc mgłę widać już w pierwszej sekundzie)
+    .to(stage, { light: LIGHT.peak, duration: T.peak, ease: "sine.out" }, 0)
     .to(
       stage,
-      { grain: 0, duration: 1.8, ease: "power1.out" },
-      T.vignette + 0.2,
+      { light: LIGHT.dip, duration: T.dip - T.peak, ease: "sine.inOut" },
+      T.peak,
     )
+    .to(
+      stage,
+      { light: 1, duration: T.full - T.dip, ease: "sine.inOut" },
+      T.dip,
+    )
+    // pył wyłania się jako ogromne, rozmyte krążki (defocus stoi na 1 do T.focus)
+    .to(stage, { dust: 1, duration: 1.8, ease: "sine.inOut" }, T.dust)
+    // okno widoku powoli się otwiera, ziarno cichnie
+    .to(stage, { vignette: 0, duration: 3.4, ease: "sine.inOut" }, T.vignette)
+    .to(stage, { grain: 0, duration: 3.2, ease: "sine.out" }, T.grain)
+    // cząstki rozchodzą się od punktu zapłonu; blask w połowie drogi wypada
+    // w chwili wyostrzania, czyli na szczycie ruchu
+    .to(stage, { burst: 1, duration: 3.2, ease: "sine.inOut" }, T.burst)
+    // światło rośnie wolniej niż jasność
+    .to(stage, { size: 1, duration: 3.6, ease: "power2.inOut" }, T.size)
+    // akt 2: ostrość doskakuje: krążki kurczą się w ostre iskry (krótko, zdecydowanie)
+    .to(stage, { defocus: 0, duration: 0.9, ease: "power2.inOut" }, T.focus)
+    // światło zsuwa się ku nagłówkowi
+    .to(stage, { path: 1, duration: 3.4, ease: "sine.inOut" }, T.sweep)
+    // akt 3: snop z rogu, potem kolory
+    .to(stage, { rays: 1, duration: 1.8, ease: "power1.inOut" }, T.rays)
+    .to(stage, { bloom: 1, duration: 2.4, ease: "sine.inOut" }, T.bloom)
+    // akt 4: treść
+    .call(() => openGate("text"), [], T.text)
     .call(() => openGate("chrome"), [], T.chrome)
-    .call(() => hooks.pulse?.(w() * 0.72, h() * 0.46, 0.35), [], T.handoff)
     // przekazanie: światło płynnie wraca do wędrowania / kursora
-    .to(stage, { script: 0, duration: 1.0, ease: "power2.inOut" }, T.handoff)
+    .to(
+      stage,
+      { script: 0, duration: T.done - T.handoff, ease: "sine.inOut" },
+      T.handoff,
+    )
     .call(() => openGate("done"), [], T.done);
 
-  events.forEach((e) => window.addEventListener(e, skip, { passive: true }));
+  SKIP_EVENTS.forEach((e) =>
+    window.addEventListener(e, skip, { passive: true }),
+  );
 
   return () => {
     tl.kill();
-    events.forEach((e) => window.removeEventListener(e, skip));
+    finish();
+  };
+}
+
+/* ---------- 6. jedyne wejście dla app.tsx ---------- */
+
+// Startuje od razu po zamontowaniu strony (jedna klatka, bez żadnego czekania):
+// zdejmuje zasłonę i puszcza właściwy scenariusz. Zwraca funkcję sprzątającą
+// (do useEffect). Start w kolejnej klatce zamiast synchronicznie sprawia, że
+// podwójne wywołanie efektu w React StrictMode (dev) niczego nie psuje.
+export function startEntrance(): () => void {
+  let stop = () => {};
+  const raf = requestAnimationFrame(() => {
+    liftBoot(INTRO_PLAYS ? 0 : 0.9);
+    stop = INTRO_PLAYS ? playIntro() : playQuick();
+    refreshInBackground();
+  });
+  return () => {
+    cancelAnimationFrame(raf);
+    stop();
   };
 }

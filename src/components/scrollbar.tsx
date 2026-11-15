@@ -156,6 +156,7 @@ export function Scrollbar() {
   return (
     <div
       ref={track}
+      data-scrollbar
       aria-hidden="true"
       className="pointer-events-none fixed inset-y-0 right-0 z-[9998] w-4 opacity-0 transition-opacity duration-500 ease-out"
       style={{ touchAction: "none" }}
@@ -163,7 +164,7 @@ export function Scrollbar() {
       <div
         ref={thumb}
         data-active="false"
-        className="absolute right-[3px] w-[5px] rounded-full bg-white/25 transition-[width,background-color,box-shadow] duration-300 ease-out data-[active=true]:w-[9px] data-[active=true]:bg-white/55 data-[active=true]:shadow-[0_0_14px_rgba(167,139,250,0.55)]"
+        className="absolute right-[3px] w-[5px] rounded-full bg-white/25 transition-[width,background-color,box-shadow] duration-300 ease-out data-[active=true]:w-[9px] data-[active=true]:bg-white/55 data-[active=true]:shadow-[0_0_14px_rgba(240,196,140,0.55)]"
         style={{ top: MARGIN }}
       />
     </div>

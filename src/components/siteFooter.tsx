@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { smoothScroll } from "../lib/useSmoothScroll";
+import { returnToTop } from "../lib/returnToTop";
 import { useNearPageEnd } from "../lib/useNearPageEnd";
 
 function warsawTime(): string {
@@ -12,19 +12,17 @@ function warsawTime(): string {
 }
 
 export function SiteFooter() {
-    const { t } = useTranslation();
-    const [time, setTime] = useState(warsawTime);
-    const near = useNearPageEnd(1.4);
+  const { t } = useTranslation();
+  const [time, setTime] = useState(warsawTime);
+  const near = useNearPageEnd(1.4);
 
   useEffect(() => {
     const id = window.setInterval(() => setTime(warsawTime()), 15_000);
     return () => window.clearInterval(id);
   }, []);
 
-  const toTop = () => {
-    if (smoothScroll.lenis) smoothScroll.lenis.scrollTo(0, { duration: 1.8 });
-    else window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  // animacja tła zamiast zwykłego scrolla (patrz lib/returnToTop.ts)
+  const toTop = () => returnToTop();
 
   return (
     <footer

@@ -22,9 +22,10 @@ export const VORTEX = {
   bloomMin: 0.35, // promień na starcie jako ułamek docelowego
 
   // scroll
-  screens: 5.5, // długość przypięcia w ekranach
-  maxSpeed: 0.2, // MAKSYMALNA prędkość animacji (postęp 0-1 na sekundę)
-  follow: 5, // jak szybko animacja goni scroll (większe = żywiej)
+  screens: 4, // długość przypięcia w ekranach (z mnożnikiem 1.8 z iconVortex: ok. 7,2)
+  maxSpeed: 0.26, // MAKSYMALNA prędkość animacji (postęp 0-1 na sekundę)
+  follow: 6, // jak szybko animacja goni scroll (większe = żywiej)
+  wheel: 1.15, // mnożnik kółka myszy w czasie wiru (poza nim 0.9, patrz useSmoothScroll)
 };
 
 export const DOCK = {

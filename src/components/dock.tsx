@@ -436,7 +436,7 @@ export function Dock({ icons, images }: Props) {
       {/* szklany pasek: stała wysokość, szerokość ustawia sprężyna w tick() */}
       <div
         ref={bar}
-        className="pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 rounded-[22px] border border-white/12 bg-black/35 shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_20px_60px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+        className="glass pointer-events-none absolute bottom-0 left-1/2 -translate-x-1/2 rounded-[22px]"
         style={{ opacity: "var(--bar, 0)" }}
       />
 
@@ -502,7 +502,7 @@ export function Dock({ icons, images }: Props) {
       >
         <div
           ref={pop}
-          className="relative overflow-hidden rounded-2xl border border-white/12 bg-[rgba(6,6,8,0.86)] shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_30px_80px_-20px_rgba(0,0,0,0.9)] backdrop-blur-2xl"
+          className="glass-solid relative overflow-hidden rounded-2xl"  
         >
           <div
             className="pointer-events-none absolute inset-0"
