@@ -50,7 +50,10 @@ export function HelloWriter({ play, className }: Props) {
   // po opuszczeniu sekcji zaczynamy cykl od początku
   if (play !== wasPlaying) {
     setWasPlaying(play);
-    if (!play) setStep(0);
+    if (!play) {
+      setStep(0);
+      setSettled(false);
+    }
   }
 
   // tryb ograniczonego ruchu: od razu gotowe słowo docelowe, bez animacji

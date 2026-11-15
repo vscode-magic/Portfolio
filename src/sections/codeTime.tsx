@@ -59,7 +59,7 @@ function BlockHeader({
 
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="bg-black/60 px-6 py-5">
+    <div className="px-6 py-5 ring-1 ring-inset ring-white/[0.06]">
       <div className="text-sm text-sky-400">{label}</div>
       <div className="mt-1.5 text-xl font-semibold tracking-tight md:text-[22px]">
         {children}
@@ -147,7 +147,7 @@ export function CodeTime() {
           />
         </Fade>
 
-        <Fade className="relative z-40 rounded-2xl border border-white/10 bg-black/50 backdrop-blur-xl">
+        <Fade className="glass relative z-40 rounded-2xl">
           <div>
             <div className="hatch h-6 border-b border-white/10 rounded-t-2xl overflow-hidden" />
 
@@ -201,7 +201,7 @@ export function CodeTime() {
               </p>
             ) : (
               <>
-                <div className="relative z-10 grid grid-cols-2 gap-px border-b border-white/10 bg-white/10 md:grid-cols-4">
+                <div className="relative z-10 grid grid-cols-2 border-b border-white/10 md:grid-cols-4">
                   <Stat label={t("activity.timeTotal")}>
                     <CountUp value={total} format={formatTime} />
                   </Stat>

@@ -1,17 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #07070a;
-  --color-glass: rgb(255 255 255 / 0.04);
-  --color-glass-border: rgb(255 255 255 / 0.1);
-  --color-accent: #7c5cff;
+  --color-ink: #0d111c;
+  --color-glass: rgb(255 255 255 / 0.06);
+  --color-glass-border: rgb(255 255 255 / 0.12);
+  --color-accent: #e8b97c;
   --font-sans: "Inter Variable", system-ui, sans-serif;
 }
 
 html {
   background: var(--color-ink);
-  color: #f4f4f6;
+  color: #eef0f6;
   scrollbar-width: none;
+  /* płynna skala interfejsu: 16px przy 1080 px wysokości, rośnie na dużych ekranach
+     (1440p, 4K, ultra-wide), a na małych i telefonach zostaje 16px */
+  font-size: clamp(16px, 1.4815vmin, 28px);
 }
 
 body {
@@ -24,11 +27,57 @@ body::-webkit-scrollbar {
   display: none;
 }
 
+/* zaznaczenie i fokus z klawiatury (wcześniej siedziały tylko w noscript w index.html) */
+::selection {
+  background: rgb(232 185 124 / 0.35);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(240 196 140 / 0.8);
+  outline-offset: 3px;
+}
+
+/* szkło w stylu Apple: wielowarstwowa tafla, światło padające z lewego górnego rogu,
+   jasna krawędź i plamka światła podążająca za kursorem (--mx/--my ustawia useGlassLight) */
 @utility glass {
-  background: var(--color-glass);
-  border: 1px solid var(--color-glass-border);
-  backdrop-filter: blur(24px) saturate(140%);
-  box-shadow: 0 0 60px -20px color-mix(in srgb, var(--color-accent) 50%, transparent);
+  --mx: -999px;
+  --my: -999px;
+  background:
+    radial-gradient(320px circle at var(--mx) var(--my),
+      rgb(255 236 210 / 0.13),
+      transparent 70%),
+    linear-gradient(145deg,
+      rgb(255 255 255 / 0.13) 0%,
+      rgb(255 255 255 / 0.045) 38%,
+      rgb(255 255 255 / 0.025) 62%,
+      rgb(255 255 255 / 0.07) 100%);
+  border: 1px solid rgb(255 255 255 / 0.09);
+  backdrop-filter: blur(34px) saturate(180%) brightness(1.06);
+  box-shadow:
+    inset 1px 1px 0 rgb(255 255 255 / 0.22),
+    inset -1px -1px 0 rgb(255 255 255 / 0.05),
+    inset 0 0 38px rgb(255 255 255 / 0.03),
+    0 1px 2px rgb(0 0 0 / 0.22),
+    0 30px 80px -34px rgb(2 4 12 / 0.75),
+    0 0 80px -30px color-mix(in srgb, var(--color-accent) 40%, transparent);
+}
+
+/* ta sama tafla, ale gęstsza: dla okienek, tooltipów i list rozwijanych (czytelność nad treścią) */
+@utility glass-solid {
+  --mx: -999px;
+  --my: -999px;
+  background:
+    radial-gradient(280px circle at var(--mx) var(--my),
+      rgb(255 236 210 / 0.1),
+      transparent 70%),
+    linear-gradient(145deg, rgb(32 38 58 / 0.88), rgb(14 18 30 / 0.93));
+  border: 1px solid rgb(255 255 255 / 0.11);
+  backdrop-filter: blur(40px) saturate(170%);
+  box-shadow:
+    inset 1px 1px 0 rgb(255 255 255 / 0.18),
+    inset -1px -1px 0 rgb(255 255 255 / 0.04),
+    0 30px 80px -24px rgb(2 4 12 / 0.85);
 }
 
 /* własny kursor tylko na urządzeniach z myszą */

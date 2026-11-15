@@ -13,6 +13,8 @@ import {
 } from "../lib/vortex";
 import { Reveal } from "../components/reveal";
 import { Dock } from "../components/dock";
+import { smoothScroll } from "../lib/useSmoothScroll";
+import { pagePriority } from "../lib/useSectionHold";
 
 const modules = import.meta.glob<string>("../assets/icons/*.{png,webp,svg}", {
   eager: true,
@@ -92,9 +94,9 @@ function makeGlow() {
     size / 2,
     size / 2,
   );
-  grad.addColorStop(0, "rgba(170,145,255,0.9)");
-  grad.addColorStop(0.4, "rgba(124,92,255,0.35)");
-  grad.addColorStop(1, "rgba(124,92,255,0)");
+  grad.addColorStop(0, "rgba(255,214,160,0.9)");
+  grad.addColorStop(0.4, "rgba(232,185,124,0.35)");
+  grad.addColorStop(1, "rgba(232,185,124,0)");
   g.fillStyle = grad;
   g.fillRect(0, 0, size, size);
   const map = new THREE.CanvasTexture(canvas);
@@ -405,6 +407,19 @@ export function IconVortex() {
         end: () => `+=${window.innerHeight * (VORTEX.screens * 1.8)}`,
         pin: true,
         invalidateOnRefresh: true,
+        refreshPriority: pagePriority(section),
+        onToggle: (self) => {
+          const lenis = smoothScroll.lenis;
+          if (lenis) {
+            // płynna zmiana czułości kółka zamiast skoku na granicy przypięcia
+            gsap.to(lenis.options, {
+              wheelMultiplier: self.isActive ? VORTEX.wheel : 0.9,
+              duration: 0.9,
+              ease: "sine.inOut",
+              overwrite: true,
+            });
+          }
+        },
         onUpdate: (self) => {
           target = self.progress;
         },

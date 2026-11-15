@@ -7,7 +7,8 @@ import { useSectionHold } from "../lib/useSectionHold";
 export function About() {
   const { t } = useTranslation();
   const root = useRef<HTMLElement>(null);
-  useSectionHold(root);
+  // about: delikatniejsze niż pozostałe sekcje
+  useSectionHold(root, 0.25, 2.4);
   const facts = t("about.facts", { returnObjects: true }) as string[];
 
   return (
@@ -33,7 +34,7 @@ export function About() {
               <Fade
                 key={f}
                 cursor
-                className="glass rounded-2xl px-6 py-4 text-white/70 transition-[padding,color] duration-500 ease-out hover:pl-8 hover:text-white"
+                className="glass rounded-3xl px-7 py-5 text-white/75 transition-[translate,color] duration-500 ease-out hover:translate-x-2 hover:text-white"
               >
                 {f}
               </Fade>

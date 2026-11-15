@@ -179,7 +179,7 @@ export function RangeSelect({
           ref={list}
           id={listId}
           role="listbox"
-          className="invisible absolute left-0 top-[calc(100%+8px)] z-30 w-56 origin-top-left rounded-xl border border-white/12 bg-[rgba(8,10,14,0.94)] p-1.5 opacity-0 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_24px_60px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl"
+          className="glass-solid invisible absolute left-0 top-[calc(100%+8px)] z-30 w-56 origin-top-left rounded-xl p-1.5 opacity-0"
         >
           {options.map((option, index) => {
             const selected = option.key === value;

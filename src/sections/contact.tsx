@@ -232,10 +232,13 @@ export function Contact() {
   // adres pojawia się, gdy pierwsze słowo jest już prawie napisane
   const [showEmail, setShowEmail] = useState(false);
   useEffect(() => {
-    if (!active || showEmail) return;
+    if (!active) return;
     const id = window.setTimeout(() => setShowEmail(true), 1600);
-    return () => window.clearTimeout(id);
-  }, [active, showEmail]);
+    return () => {
+      window.clearTimeout(id);
+      setShowEmail(false); // po opuszczeniu sekcji adres znika i wejdzie od nowa
+    };
+  }, [active]);
 
   // wejście elementów: przesunięcie i pojawienie się z kolejnym opóźnieniem
   const appear = (delayMs: number) => ({
@@ -259,7 +262,7 @@ export function Contact() {
         }`}
         style={{
           background:
-            "radial-gradient(closest-side, rgba(167,139,250,0.14), transparent)",
+            "radial-gradient(closest-side, rgba(240,196,140,0.14), transparent)",
           willChange: "transform",
         }}
       />

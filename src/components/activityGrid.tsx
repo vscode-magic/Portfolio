@@ -260,7 +260,7 @@ export function ActivityGrid({ weeks, byDate, range, weekdays }: Props) {
       {createPortal(
         <div
           ref={tip}
-          className="pointer-events-none fixed left-0 top-0 z-[9999] w-52 overflow-hidden rounded-xl border border-white/12 bg-[rgba(6,6,8,0.96)] shadow-[0_20px_60px_rgba(0,0,0,0.95)] backdrop-blur-2xl"
+          className="glass-solid pointer-events-none fixed left-0 top-0 z-[9999] w-52 overflow-hidden rounded-xl"
         >
           <div ref={contentRef} className="px-3 py-2.5">
             <div className="text-[11px] text-white/50">{dateLabel}</div>

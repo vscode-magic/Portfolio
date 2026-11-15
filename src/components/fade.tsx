@@ -1,6 +1,7 @@
 import { useRef, type ReactNode } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "../lib/gsap";
+import { documentTop } from "../lib/useSectionHold";
 
 type Props = {
   children: ReactNode;
@@ -28,9 +29,16 @@ export function Fade({
       const el = ref.current;
       if (!el) return;
 
-      // sekcje z zatrzymaniem (data-hold) są przypięte, więc wyjście
-      // musi zacząć się dopiero po zakończeniu przypięcia
-      const pinned = el.closest<HTMLElement>("[data-hold]") ?? undefined;
+      // sekcje z zatrzymaniem (data-hold) po zwolnieniu są przesunięte w dół o dystans
+      // zatrzymania (ustawia go useSectionHold), więc wyjście musi zacząć się o tyle później
+      const held = el.closest<HTMLElement>("[data-hold]");
+      const exitAt = (viewportShare: number, fallback: string) => () =>
+        held
+          ? documentTop(el) +
+            el.offsetHeight -
+            window.innerHeight * viewportShare +
+            (Number(held.dataset.holdPx) || 0)
+          : fallback;
 
       // przed wejściem i po wyjściu element jest niewidoczny, więc wyłączamy mu kursor
       let hiddenIn = mode !== "out";
@@ -84,9 +92,9 @@ export function Fade({
             immediateRender: false,
             scrollTrigger: {
               trigger: el,
-              pinnedContainer: pinned,
-              start: "bottom 40%",
-              end: "bottom 5%",
+              start: exitAt(0.4, "bottom 40%"),
+              end: exitAt(0.05, "bottom 5%"),
+              invalidateOnRefresh: true,
               scrub: 0.6,
               onUpdate: (self) => checkOut(self.progress),
               onRefresh: (self) => checkOut(self.progress),

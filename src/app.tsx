@@ -10,32 +10,15 @@ import { Contact } from "./sections/contact";
 import { SiteFooter } from "./components/siteFooter";
 import { Scrollbar } from "./components/scrollbar";
 import { useSmoothScroll } from "./lib/useSmoothScroll";
-import {
-  INTRO_PLAYS,
-  liftBoot,
-  playIntro,
-  playQuick,
-  waitUntilReady,
-} from "./lib/intro";
+import { useGlassLight } from "./lib/useGlassLight";
+import { startEntrance } from "./lib/intro";
 
 export default function App() {
   useSmoothScroll();
+  useGlassLight();
 
-  // loader: czekamy aż strona się ułoży, dopiero wtedy zdejmujemy zasłonę i ruszamy animację
-  useEffect(() => {
-    let cancelled = false;
-    let stop = () => {};
-    void waitUntilReady().then(() => {
-      if (cancelled) return;
-      // przy pełnym intro tło i tak jest czarne, więc zasłonę zdejmujemy od razu
-      liftBoot(INTRO_PLAYS ? 0 : 0.9);
-      stop = INTRO_PLAYS ? playIntro() : playQuick();
-    });
-    return () => {
-      cancelled = true;
-      stop();
-    };
-  }, []);
+  // wejście na stronę: loader, zasłona i intro (całość w lib/intro.ts)
+  useEffect(() => startEntrance(), []);
 
   return (
     <>
@@ -54,4 +37,3 @@ export default function App() {
     </>
   );
 }
-  

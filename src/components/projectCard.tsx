@@ -123,12 +123,14 @@ export function ProjectCard({
         {/* kafel: rozmyte tło z tego samego zrzutu + zrzut w całości (bez przycinania) */}
         <div
           data-frame
-          className={`relative aspect-[16/10] min-h-0 overflow-hidden border bg-[#0d0d11] transition-colors duration-700 md:aspect-auto md:flex-1 ${
-            focused ? "border-white/25" : "border-white/10"
+          className={`relative aspect-[16/10] min-h-0 overflow-hidden border bg-ink transition-colors duration-700 md:aspect-auto md:flex-1 ${
+            focused
+              ? "border-white/28 border-t-white/50 border-l-white/38"
+              : "border-white/10 border-t-white/30 border-l-white/20"
           }`}
           style={{
             borderRadius: RADIUS,
-            boxShadow: "0 28px 70px -34px rgba(0,0,0,0.95)",
+            boxShadow: "0 28px 70px -34px rgba(2,4,12,0.9)",
           }}
         >
           {!missing && (
@@ -142,7 +144,7 @@ export function ProjectCard({
               className="pointer-events-none absolute inset-0 size-full scale-125 object-cover opacity-50 blur-2xl saturate-150"
             />
           )}
-          <div className="absolute inset-0 bg-black/30" />
+          <div className="absolute inset-0 bg-ink/35" />
 
           <div
             data-shot
