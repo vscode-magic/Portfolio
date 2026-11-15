@@ -28,3 +28,5 @@ local.db
 __pycache__/
 backups/
 backups/
+
+*.zip

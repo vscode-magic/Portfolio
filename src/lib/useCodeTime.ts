@@ -44,17 +44,7 @@ export function useCodeTime(enabled: boolean) {
     return () => window.clearInterval(id);
   }, [tz]);
 
-  // całe archiwum raz
-  useEffect(() => {
-    const controller = new AbortController();
-    getJson<Archive>("/api/codetime/archive", controller.signal)
-      .then(setArchive)
-      .catch((error: Error) => {
-        if (error.name !== "AbortError") setFailed(true);
-      });
-    return () => controller.abort();
-  }, []);
-
+  // "recent" dosynchronizowuje ostatnie dni (serwer ma cooldown, więc wołanie jest tanie)
   const refreshRecent = useCallback(async () => {
     try {
       const recent = await getJson<{
@@ -75,6 +65,22 @@ export function useCodeTime(enabled: boolean) {
     }
   }, []);
 
+  // całe archiwum raz; zaraz po nim dociągamy świeże dni. Archiwum czyta tylko bazę
+  // (i bywa w cache CDN), a synchronizacja z CodeTime dzieje się wyłącznie w "recent",
+  // więc bez tego kroku po otwarciu strony widać stare dane, jeśli akurat nie kodujesz.
+  useEffect(() => {
+    const controller = new AbortController();
+    getJson<Archive>("/api/codetime/archive", controller.signal)
+      .then((loaded) => {
+        setArchive(loaded);
+        void refreshRecent();
+      })
+      .catch((error: Error) => {
+        if (error.name !== "AbortError") setFailed(true);
+      });
+    return () => controller.abort();
+  }, [refreshRecent]);
+
   // status: tylko gdy sekcja jest widoczna i karta aktywna
   useEffect(() => {
     if (!enabled) return;
@@ -94,11 +100,20 @@ export function useCodeTime(enabled: boolean) {
       }
     };
 
+    // powrót na kartę: dane mogły się zmienić, gdy była ukryta (wtedy nic nie odpytujemy)
+    const onVisible = () => {
+      if (document.visibilityState !== "visible") return;
+      void refreshRecent();
+      void poll();
+    };
+
     void poll();
     const id = window.setInterval(poll, STATUS_EVERY_MS);
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       stopped = true;
       window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [enabled, refreshRecent]);
 

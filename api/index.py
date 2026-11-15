@@ -9,7 +9,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fastapi import FastAPI, HTTPException, Query, Response  # noqa: E402
 
-from _lib.codetime import CodeTimeError  # noqa: E402
 from _lib.reconcile import apply_diff, backup, compare, suspicious  # noqa: E402
 from _lib.settings import get_settings  # noqa: E402
 from _lib.sync import (  # noqa: E402
@@ -71,7 +70,7 @@ def codetime_status(response: Response) -> dict:
     """Tylko {active, lastEventAt}: ścieżki plików i projekty nie opuszczają serwera."""
     try:
         status = get_status()
-    except CodeTimeError:
+    except Exception:  # CodeTime, Turso, sieć: każdy błąd ma być widoczny w logach
         logger.exception("CodeTime status")
         raise HTTPException(status_code=502, detail="CodeTime niedostępny")
     cache(response, 5, 10)
@@ -98,7 +97,7 @@ def codetime_recent(response: Response, days: int = Query(3, ge=1, le=14)) -> di
     failed = False
     try:
         synced = sync_recent(days)["synced"]
-    except CodeTimeError:
+    except Exception:  # CodeTime ORAZ baza (Turso): bez tego błąd bazy dawał 500 bez danych
         logger.exception("CodeTime sync")  # zwracamy to, co już mamy w bazie
         failed = True
     cache(response, 5 if failed else 20)
