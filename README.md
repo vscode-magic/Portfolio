@@ -5,7 +5,7 @@ wizualizację technologii w 3D i własny backend do statystyk kodowania.
 
 **React · TypeScript · Three.js · GSAP · Python · FastAPI**
 
-[Zobacz portfolio](https://portfolio-vscode-magic.vercel.app/)
+[Zobacz portfolio](https://piotr-zniszczol.vercel.app/)
 
 ---
 
