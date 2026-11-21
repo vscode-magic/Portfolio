@@ -12,13 +12,14 @@ import { Scrollbar } from "./components/scrollbar";
 import { useSmoothScroll } from "./lib/useSmoothScroll";
 import { useGlassLight } from "./lib/useGlassLight";
 import { startEntrance } from "./lib/intro";
+import { scrollMemory } from "./lib/scrollMemory";
 
 export default function App() {
   useSmoothScroll();
   useGlassLight();
 
-  // wejście na stronę: loader, zasłona i intro (całość w lib/intro.ts)
-  useEffect(() => startEntrance(), []);
+  // wejście na stronę: intro albo powrót na zapamiętane miejsce (lib/intro.ts, lib/scrollMemory.ts)
+  useEffect(() => startEntrance(scrollMemory), []);
 
   return (
     <>

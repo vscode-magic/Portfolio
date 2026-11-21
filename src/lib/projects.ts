@@ -1,5 +1,5 @@
 import skycastImage from "../assets/projects/skycast.png";
-import portfolioImage from "../assets/projects/portfolio.jpg";
+import portfolioImage from "../assets/projects/portfolio.png";
 
 export type Project = {
   id: string; // klucz tłumaczeń: projects.items.<id>.summary

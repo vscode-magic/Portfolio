@@ -3,6 +3,7 @@ import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger, SplitText } from "./gsap";
 import { MOTION } from "./motion";
 import { onOpen } from "./intro";
+import { blur } from "./device";
 
 // Rejestr aktywnych tekstów, żeby animację słów dało się odtworzyć ponownie bez
 // scrollowania (np. po powrocie na górę, patrz returnToTop.ts).
@@ -53,7 +54,7 @@ export function useWordReveal(ref: RefObject<HTMLElement | null>) {
           const tween = gsap.from(self.words, {
             yPercent: 28,
             opacity: 0,
-            filter: "blur(10px)", // słowa wyostrzają się jak w przeostrzeniu ostrości
+            ...blur(10), // słowa wyostrzają się jak w przeostrzeniu ostrości (na mobile bez rozmycia)
             duration: 1.5,
             ease: "power3.out", // spokojnie, bez odbicia
             stagger: { amount: Math.min(1.1, self.words.length * 0.07) },

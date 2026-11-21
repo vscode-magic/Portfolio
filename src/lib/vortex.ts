@@ -26,6 +26,10 @@ export const VORTEX = {
   maxSpeed: 0.26, // MAKSYMALNA prędkość animacji (postęp 0-1 na sekundę)
   follow: 6, // jak szybko animacja goni scroll (większe = żywiej)
   wheel: 1.15, // mnożnik kółka myszy w czasie wiru (poza nim 0.9, patrz useSmoothScroll)
+
+  // telefon: krótszy przelot (palcem 7 ekranów to wieczność) i szybsze doganianie scrolla
+  mobileScreens: 3.2, // długość sekcji w ekranach (bez pinu, patrz iconVortex.tsx)
+  mobileMaxSpeed: 0.42, // MAKSYMALNA prędkość animacji na telefonie
 };
 
 export const DOCK = {
