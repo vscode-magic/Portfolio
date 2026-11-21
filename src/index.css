@@ -15,11 +15,20 @@ html {
   /* płynna skala interfejsu: 16px przy 1080 px wysokości, rośnie na dużych ekranach
      (1440p, 4K, ultra-wide), a na małych i telefonach zostaje 16px */
   font-size: clamp(16px, 1.4815vmin, 28px);
+  /* bez przesuwania strony na boki (na telefonie dało się ją przeciągnąć w poziomie);
+     clip nie tworzy kontenera przewijania, więc nie psuje sticky ani scrolla.
+     Pierwsza linia to zapas dla starych przeglądarek bez clip. */
+  overflow-x: hidden;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
 }
 
 body {
   font-family: var(--font-sans);
   overflow-x: hidden;
+  overflow-x: clip;
+  /* przewijanie tylko w pionie (poziomo przewijają się tylko elementy z własnym scrollem) */
+  touch-action: pan-y pinch-zoom;
   scrollbar-width: none;
 }
 
@@ -140,6 +149,174 @@ body::-webkit-scrollbar {
 
 @media (prefers-reduced-motion: reduce) {
   .marquee {
+    animation: none;
+  }
+}
+
+/* ---------- tło na telefon (components/ambientMobile.tsx) ----------
+   Wszystko to sam transform i opacity, więc animacje chodzą na kompozytorze GPU i nie
+   zależą od głównego wątku. Wysokość 100lvh (stała, niezależna od paska adresu) sprawia,
+   że tło nie skacze i nie skaluje się przy przewijaniu. */
+.amb-root {
+  height: 100vh;
+  height: 100lvh;
+}
+
+.amb-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes amb-a {
+  from {
+    transform: translate3d(-2vw, -1vh, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(3vw, 3vh, 0) scale(1.08);
+  }
+}
+
+@keyframes amb-b {
+  from {
+    transform: translate3d(2vw, 2vh, 0) scale(1.06);
+  }
+
+  to {
+    transform: translate3d(-3vw, -2vh, 0) scale(1);
+  }
+}
+
+.amb-a {
+  animation: amb-a 26s ease-in-out infinite alternate;
+  transform-origin: 40% 30%;
+}
+
+.amb-b {
+  animation: amb-b 31s ease-in-out infinite alternate;
+  transform-origin: 60% 50%;
+}
+
+.amb-lamp {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min(130vw, 76lvh);
+  height: min(130vw, 76lvh);
+  animation: amb-lamp 48s ease-in-out infinite;
+}
+
+@keyframes amb-lamp {
+
+  0%,
+  100% {
+    transform: translate3d(-24vw, -8lvh, 0) scale(1);
+    opacity: 0.9;
+  }
+
+  25% {
+    transform: translate3d(26vw, 8lvh, 0) scale(1.12);
+    opacity: 1;
+  }
+
+  50% {
+    transform: translate3d(-4vw, 36lvh, 0) scale(0.95);
+    opacity: 0.85;
+  }
+
+  75% {
+    transform: translate3d(36vw, 52lvh, 0) scale(1.08);
+    opacity: 1;
+  }
+}
+
+.amb-rays {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 130%;
+  transform-origin: 10% 0;
+  animation: amb-rays 21s ease-in-out infinite alternate;
+}
+
+@keyframes amb-rays {
+  from {
+    transform: rotate(-1.4deg);
+    opacity: 0.85;
+  }
+
+  to {
+    transform: rotate(1.6deg);
+    opacity: 1;
+  }
+}
+
+.amb-dust {
+  position: absolute;
+  left: -8%;
+  top: -6%;
+  width: 116%;
+  height: 112%;
+}
+
+@keyframes amb-dust-1 {
+  from {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.75;
+  }
+
+  to {
+    transform: translate3d(-2vw, -2.5lvh, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes amb-dust-2 {
+  from {
+    transform: translate3d(1.5vw, 1lvh, 0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translate3d(-3vw, -4.5lvh, 0);
+    opacity: 0.7;
+  }
+}
+
+@keyframes amb-dust-3 {
+  from {
+    transform: translate3d(-2vw, 2lvh, 0);
+    opacity: 0.8;
+  }
+
+  to {
+    transform: translate3d(3vw, -7lvh, 0);
+    opacity: 1;
+  }
+}
+
+.amb-dust-1 {
+  animation: amb-dust-1 34s ease-in-out infinite alternate;
+}
+
+.amb-dust-2 {
+  animation: amb-dust-2 27s ease-in-out infinite alternate;
+}
+
+.amb-dust-3 {
+  animation: amb-dust-3 21s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .amb-a,
+  .amb-b,
+  .amb-lamp,
+  .amb-rays,
+  .amb-dust {
     animation: none;
   }
 }

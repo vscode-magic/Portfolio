@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Ambient } from "./components/ambient";
+import { AmbientMobile } from "./components/ambientMobile";
 import { Cursor } from "./components/cursor";
 import { Hero } from "./sections/hero";
 import { About } from "./sections/about";
@@ -25,7 +26,8 @@ export default function App() {
 
   return (
     <>
-      <Ambient />
+      {/* telefon: tło rysowane raz, ruch robi CSS (patrz ambientMobile.tsx) */}
+      {MOBILE ? <AmbientMobile /> : <Ambient />}
       <main>
         <Cursor />
         <Hero />

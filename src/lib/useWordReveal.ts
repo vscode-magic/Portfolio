@@ -12,7 +12,7 @@ const replays = new Set<Replay>();
 
 // Linia, powyżej której tekst jest już "wchodzący": to samo co MOTION.revealStart
 // ("top 60%"), czyli górna krawędź na 60% wysokości ekranu.
-const REVEAL_LINE = MOBILE ? 0.85 : 0.6;
+const REVEAL_LINE = MOBILE ? 0.96 : 0.6;
 
 // Chowa teraz widoczne teksty (słowa wracają do stanu początkowego) i zwraca funkcję,
 // która odtwarza dla nich dokładnie tę samą animację co przy normalnym wejściu.
@@ -55,7 +55,7 @@ export function useWordReveal(ref: RefObject<HTMLElement | null>) {
             yPercent: 28,
             opacity: 0,
             ...blur(10), // słowa wyostrzają się jak w przeostrzeniu ostrości (na mobile bez rozmycia)
-            duration: MOBILE ? 0.85 : 1.5, // telefon: krócej, bo scroll palcem jest szybki
+            duration: MOBILE ? 0.75 : 1.5, // telefon: krócej, bo scroll palcem jest szybki
             ease: "power3.out", // spokojnie, bez odbicia
             stagger: {
               amount: MOBILE

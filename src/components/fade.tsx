@@ -74,8 +74,8 @@ export function Fade({
             scrollTrigger: {
               trigger: el,
               // telefon: wejście zaczyna się i kończy wyżej, a wygładzanie jest krótsze
-              start: MOBILE ? "top 100%" : "top 96%",
-              end: MOBILE ? "top 78%" : "top 66%",
+              start: MOBILE ? "top 108%" : "top 96%",
+              end: MOBILE ? "top 84%" : "top 66%",
               scrub: MOBILE ? 0.3 : 0.6,
               onUpdate: (self) => checkIn(self.progress),
               onRefresh: (self) => checkIn(self.progress),
