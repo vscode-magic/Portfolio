@@ -5,6 +5,7 @@ import { Fade } from "../components/fade";
 import { ProjectCard } from "../components/projectCard";
 import { useSectionHold } from "../lib/useSectionHold";
 import { PROJECTS } from "../lib/projects";
+import { MOBILE } from "../lib/device";
 
 // Układ bento: dwie kolumny, wysokość liczona w jednostkach wiersza.
 // Lewa: wysoki (5) + niski (4). Prawa: niski (4) + wysoki (5). Blok ma 9 wierszy i powtarza się co 4 projekty.
@@ -36,7 +37,11 @@ export function Projects() {
   const [active, setActive] = useState<number | null>(null);
 
   return (
-    <section ref={root} data-hold className="relative px-6 py-32 md:px-16">
+    <section
+      ref={root}
+      data-hold
+      className={`relative px-6 md:px-16 ${MOBILE ? "py-20" : "py-32"}`}
+    >
       <div className="mx-auto max-w-6xl">
         <Fade>
           <Reveal
@@ -52,7 +57,7 @@ export function Projects() {
         </Fade>
 
         <div
-          className="grid grid-cols-1 gap-x-4 gap-y-10 md:auto-rows-[calc(var(--col)*var(--row-ratio))] md:grid-cols-2 md:gap-y-4"
+          className="grid grid-cols-1 gap-x-4 gap-y-9 md:auto-rows-[calc(var(--col)*var(--row-ratio))] md:grid-cols-2 md:gap-y-4"
           style={
             {
               // szerokość jednej kolumny: (szerokość treści - odstęp) / 2

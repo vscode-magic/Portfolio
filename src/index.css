@@ -123,3 +123,23 @@ body::-webkit-scrollbar {
       rgb(255 255 255 / 0.08) 0 1px,
       transparent 1px 7px);
 }
+
+/* pasy ikon w sekcji technologii na telefonie (zamiast wiru 3D): sam transform, więc
+   animacja chodzi na kompozytorze i nie obciąża głównego wątku; margines zamiast gap,
+   dzięki czemu przesunięcie o -50% zapętla się bez skoku */
+@keyframes marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee {
+  animation: marquee 40s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    animation: none;
+  }
+}

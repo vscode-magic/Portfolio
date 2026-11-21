@@ -25,11 +25,29 @@ export function useSmoothScroll() {
       lenis.start();
     });
 
+    // telefon: ignoreMobileResize wyłącza automatyczne przeliczanie przy zmianach okna, więc
+    // pozycje animacji odświeżamy sami, gdy zmieni się wysokość strony (np. doładowały się
+    // zrzuty projektów). Bez tego animacje tekstu odpalały się za późno.
+    let roTimer = 0;
+    let lastHeight = document.body.offsetHeight;
+    const ro = MOBILE
+      ? new ResizeObserver(() => {
+          const h = document.body.offsetHeight;
+          if (Math.abs(h - lastHeight) < 2) return;
+          lastHeight = h;
+          window.clearTimeout(roTimer);
+          roTimer = window.setTimeout(() => ScrollTrigger.refresh(), 300);
+        })
+      : null;
+    ro?.observe(document.body);
+
     const tick = (t: number) => lenis.raf(t * 1000);
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
     return () => {
       offIntro();
+      ro?.disconnect();
+      window.clearTimeout(roTimer);
       document.documentElement.style.overflow = "";
       gsap.ticker.remove(tick);
       smoothScroll.lenis = null;

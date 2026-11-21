@@ -4,6 +4,7 @@ import { Cursor } from "./components/cursor";
 import { Hero } from "./sections/hero";
 import { About } from "./sections/about";
 import { IconVortex } from "./sections/iconVortex";
+import { TechStack } from "./sections/techStack";
 import { CodeTime } from "./sections/codeTime";
 import { Projects } from "./sections/projects";
 import { Contact } from "./sections/contact";
@@ -13,6 +14,7 @@ import { useSmoothScroll } from "./lib/useSmoothScroll";
 import { useGlassLight } from "./lib/useGlassLight";
 import { startEntrance } from "./lib/intro";
 import { scrollMemory } from "./lib/scrollMemory";
+import { MOBILE } from "./lib/device";
 
 export default function App() {
   useSmoothScroll();
@@ -28,7 +30,8 @@ export default function App() {
         <Cursor />
         <Hero />
         <About />
-        <IconVortex />
+        {/* telefon: zamiast wiru 3D lekkie, przesuwane pasy ikon */}
+        {MOBILE ? <TechStack /> : <IconVortex />}
         <CodeTime />
         <Projects />
         <Contact />

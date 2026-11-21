@@ -2,6 +2,7 @@ import { useRef, type ReactNode } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "../lib/gsap";
 import { documentTop } from "../lib/useSectionHold";
+import { MOBILE } from "../lib/device";
 
 type Props = {
   children: ReactNode;
@@ -72,9 +73,10 @@ export function Fade({
             ease: "none",
             scrollTrigger: {
               trigger: el,
-              start: "top 96%",
-              end: "top 66%",
-              scrub: 0.6,
+              // telefon: wejście zaczyna się i kończy wyżej, a wygładzanie jest krótsze
+              start: MOBILE ? "top 100%" : "top 96%",
+              end: MOBILE ? "top 78%" : "top 66%",
+              scrub: MOBILE ? 0.3 : 0.6,
               onUpdate: (self) => checkIn(self.progress),
               onRefresh: (self) => checkIn(self.progress),
             },
@@ -95,7 +97,7 @@ export function Fade({
               start: exitAt(0.4, "bottom 40%"),
               end: exitAt(0.05, "bottom 5%"),
               invalidateOnRefresh: true,
-              scrub: 0.6,
+              scrub: MOBILE ? 0.3 : 0.6,
               onUpdate: (self) => checkOut(self.progress),
               onRefresh: (self) => checkOut(self.progress),
             },

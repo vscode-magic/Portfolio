@@ -14,11 +14,16 @@ import {
 } from "../lib/activity";
 import { formatMinutes } from "../lib/formatTime";
 import { LanguageRow } from "./languageRow";
+import { MOBILE } from "../lib/device";
 
 // Siatka ukryta przez Fade (opacity bliskie 0) nie może pokazywać dymka
 function visibleEnough(el: HTMLElement | null): boolean {
   let opacity = 1;
-  for (let node = el; node && node !== document.body; node = node.parentElement) {
+  for (
+    let node = el;
+    node && node !== document.body;
+    node = node.parentElement
+  ) {
     opacity *= parseFloat(getComputedStyle(node).opacity);
     if (opacity < 0.5) return false;
   }
@@ -84,7 +89,8 @@ export function ActivityGrid({ weeks, byDate, range, weekdays }: Props) {
   useGSAP(
     () => {
       const el = grid.current;
-      if (!el) return;
+      // telefon: 370 osobnych animacji kafelków naraz to za dużo; całą siatkę i tak wprowadza Fade
+      if (!el || MOBILE) return;
       const cells = Array.from(el.querySelectorAll<HTMLElement>("[data-date]"));
       if (!cells.length) return;
 
@@ -214,7 +220,7 @@ export function ActivityGrid({ weeks, byDate, range, weekdays }: Props) {
     }
 
     setTipDate(cell.dataset.date ?? null);
-  };;
+  };
 
   const entry = tipDate && inRange ? byDate.get(tipDate) : undefined;
   const dateLabel = tipDate
@@ -230,7 +236,9 @@ export function ActivityGrid({ weeks, byDate, range, weekdays }: Props) {
   return (
     <div
       ref={scroller}
-      className="overflow-x-auto px-6 pb-4 pt-10 [scrollbar-width:none]"
+      className={`overflow-x-auto pb-4 [scrollbar-width:none] ${
+        MOBILE ? "px-4 pt-6" : "px-6 pt-10"
+      }`}
     >
       <div ref={wrap} className="relative mx-auto w-max">
         <div className="flex gap-3">

@@ -7,6 +7,7 @@ import { RangeSelect } from "../components/rangeSelect";
 import { ActivityGrid } from "../components/activityGrid";
 import { Icon } from "../components/icons";
 import { useCodeTime } from "../lib/useCodeTime";
+import { MOBILE } from "../lib/device";
 import { useSectionHold } from "../lib/useSectionHold";
 import { formatMinutes } from "../lib/formatTime";
 import {
@@ -42,7 +43,11 @@ function BlockHeader({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-white/10 bg-white/[0.035] px-6 py-3.5">
+    <div
+      className={`flex items-center justify-between gap-4 border-b border-white/10 bg-white/[0.035] py-3.5 ${
+        MOBILE ? "px-4" : "px-6"
+      }`}
+    >
       <div className="flex items-center gap-3 text-sm font-medium">
         <Icon name={icon} className="size-4 text-white/60" />
         {title}
@@ -59,9 +64,17 @@ function BlockHeader({
 
 function Stat({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="px-6 py-5 ring-1 ring-inset ring-white/[0.06]">
+    <div
+      className={`ring-1 ring-inset ring-white/[0.06] ${
+        MOBILE ? "px-4 py-4" : "px-6 py-5"
+      }`}
+    >
       <div className="text-sm text-sky-400">{label}</div>
-      <div className="mt-1.5 text-xl font-semibold tracking-tight md:text-[22px]">
+      <div
+        className={`mt-1.5 font-semibold tracking-tight md:text-[22px] ${
+          MOBILE ? "text-lg leading-snug" : "text-xl"
+        }`}
+      >
         {children}
       </div>
     </div>
@@ -131,7 +144,9 @@ export function CodeTime() {
     <section
       ref={root}
       data-hold
-      className="relative z-30 flex min-h-screen flex-col justify-center px-6 pb-40 pt-16 md:px-16"
+      className={`relative z-30 flex flex-col justify-center px-6 md:px-16 ${
+        MOBILE ? "pb-20 pt-16" : "min-h-screen pb-40 pt-16"
+      }`}
     >
       <div className="mx-auto w-full max-w-5xl">
         <Fade>
@@ -143,20 +158,24 @@ export function CodeTime() {
           <Reveal
             as="h2"
             text={t("activity.title")}
-            className="mb-10 text-4xl font-semibold tracking-tight md:text-6xl"
+            className="mb-8 text-4xl font-semibold tracking-tight md:mb-10 md:text-6xl"
           />
         </Fade>
 
         <Fade className="glass relative z-40 rounded-2xl">
           <div>
-            <div className="hatch h-6 border-b border-white/10 rounded-t-2xl overflow-hidden" />
+            <div
+              className={`hatch overflow-hidden rounded-t-2xl border-b border-white/10 ${
+                MOBILE ? "h-3" : "h-6"
+              }`}
+            />
 
             <BlockHeader
               icon="calendar"
               title={t("activity.dateRange")}
               caption={t("activity.dateRangeCaption")}
             />
-            <div className="px-6 py-5">
+            <div className={MOBILE ? "px-4 py-4" : "px-6 py-5"}>
               <RangeSelect
                 options={options}
                 value={preset}
@@ -173,7 +192,9 @@ export function CodeTime() {
               />
             </div>
 
-            <div className="hatch h-6 border-y border-white/10" />
+            <div
+              className={`hatch border-y border-white/10 ${MOBILE ? "h-3" : "h-6"}`}
+            />
 
             <BlockHeader
               icon="activity"
@@ -226,14 +247,22 @@ export function CodeTime() {
                 </div>
 
                 {archive?.since && (
-                  <p className="px-6 pb-5 font-mono text-[11px] text-white/35">
+                  <p
+                    className={`pb-5 font-mono text-[11px] text-white/35 ${
+                      MOBILE ? "px-4" : "px-6"
+                    }`}
+                  >
                     {t("activity.trackingSince", { date: archive.since })}
                   </p>
                 )}
               </>
             )}
 
-            <div className="hatch h-6 border-t border-white/10 rounded-b-2xl overflow-hidden" />
+            <div
+              className={`hatch overflow-hidden rounded-b-2xl border-t border-white/10 ${
+                MOBILE ? "h-3" : "h-6"
+              }`}
+            />
           </div>
         </Fade>
       </div>
