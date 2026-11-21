@@ -14,9 +14,7 @@ import {
 import { Reveal } from "../components/reveal";
 import { Dock } from "../components/dock";
 import { smoothScroll } from "../lib/useSmoothScroll";
-import { onOpen } from "../lib/intro";
-import { MOBILE } from "../lib/device";
-import { documentTop, pagePriority } from "../lib/useSectionHold";
+import { pagePriority } from "../lib/useSectionHold";
 
 const modules = import.meta.glob<string>("../assets/icons/*.{png,webp,svg}", {
   eager: true,
@@ -52,19 +50,14 @@ const loadImage = (src: string) =>
     img.src = src;
   });
 
-// telefon: kafelki 256 px zamiast 512 (cztery razy mniej pamięci GPU i szybsze dekodowanie;
-// ikony na ekranie telefonu i tak mają ok. 60 px)
-const TILE = MOBILE ? 256 : 512;
-
 function makeTile(img: HTMLImageElement, anisotropy: number) {
-  const size = TILE;
-  const k = size / 512;
+  const size = 512;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const g = canvas.getContext("2d")!;
   g.imageSmoothingQuality = "high";
 
-  const pad = 10 * k;
+  const pad = 10;
   const grad = g.createLinearGradient(0, 0, size, size);
   grad.addColorStop(0, "rgba(255,255,255,0.16)");
   grad.addColorStop(1, "rgba(255,255,255,0.05)");
@@ -72,7 +65,7 @@ function makeTile(img: HTMLImageElement, anisotropy: number) {
   g.roundRect(pad, pad, size - pad * 2, size - pad * 2, size * 0.26);
   g.fillStyle = grad;
   g.fill();
-  g.lineWidth = 3 * k;
+  g.lineWidth = 3;
   g.strokeStyle = "rgba(255,255,255,0.2)";
   g.stroke();
 
@@ -117,14 +110,12 @@ const bezier = (a: number, c: number, b: number, u: number) =>
 export function IconVortex() {
   const { t } = useTranslation();
   const root = useRef<HTMLElement>(null);
-  const wrap = useRef<HTMLDivElement>(null); // tylko telefon: wysoki kontener dla sticky
   const canvas = useRef<HTMLCanvasElement>(null);
   const title = useRef<HTMLDivElement>(null);
   const [dockImages, setDockImages] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const section = root.current!;
-    const wrapEl = wrap.current;
     const canvasEl = canvas.current!;
     const titleEl = title.current!;
     const dockEl = document.querySelector<HTMLElement>("[data-dock]")!;
@@ -153,11 +144,11 @@ export function IconVortex() {
 
     const renderer = new THREE.WebGLRenderer({
       canvas: canvasEl,
-      antialias: !MOBILE, // telefon ma gęsty ekran, więc krawędzie sprite'ów i tak są gładkie
+      antialias: true,
       alpha: true,
       powerPreference: "high-performance",
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, MOBILE ? 1.5 : 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
 
     const scene = new THREE.Scene();
@@ -184,81 +175,51 @@ export function IconVortex() {
     };
     resize();
 
-    const anisotropy = MOBILE ? 1 : renderer.capabilities.getMaxAnisotropy();
-    // 30 ikon (ok. 440 KB) pobieramy i dekodujemy dopiero po intro (gdy przeglądarka ma wolną
-    // chwilę) albo wcześniej, gdy strona zbliża się do sekcji. Pin sekcji powstaje od razu,
-    // więc układ strony się nie zmienia, a tick i tak nic nie rysuje, dopóki nie ma sprite'ów.
-    let sceneLoading = false;
-    const loadScene = () => {
-      if (sceneLoading || disposed) return;
-      sceneLoading = true;
-      Promise.all(names.map((n) => loadImage(sources[n]))).then((images) => {
-        if (disposed) return;
-        glowMap = makeGlow();
-        images.forEach((img, i) => {
-          const map = makeTile(img, anisotropy);
-          textures.push(map);
-          const material = new THREE.SpriteMaterial({
-            map,
-            transparent: true,
-            depthWrite: false,
-            depthTest: false,
-            opacity: 0,
-          });
-          const sprite = new THREE.Sprite(material);
-          sprite.renderOrder = 1;
-          sprite.scale.set(VORTEX.tile, VORTEX.tile, 1);
-          group.add(sprite);
-          sprites.push(sprite);
-
-          if (dockIcons.includes(names[i])) {
-            const glow = new THREE.Sprite(
-              new THREE.SpriteMaterial({
-                map: glowMap,
-                transparent: true,
-                depthWrite: false,
-                depthTest: false,
-                blending: THREE.AdditiveBlending,
-                opacity: 0,
-              }),
-            );
-            glow.renderOrder = 0;
-            group.add(glow);
-            glows[i] = glow;
-          }
+    const anisotropy = renderer.capabilities.getMaxAnisotropy();
+    Promise.all(names.map((n) => loadImage(sources[n]))).then((images) => {
+      if (disposed) return;
+      glowMap = makeGlow();
+      images.forEach((img, i) => {
+        const map = makeTile(img, anisotropy);
+        textures.push(map);
+        const material = new THREE.SpriteMaterial({
+          map,
+          transparent: true,
+          depthWrite: false,
+          depthTest: false,
+          opacity: 0,
         });
+        const sprite = new THREE.Sprite(material);
+        sprite.renderOrder = 1;
+        sprite.scale.set(VORTEX.tile, VORTEX.tile, 1);
+        group.add(sprite);
+        sprites.push(sprite);
 
-        const urls: Record<string, string> = {};
-        dockIcons.forEach((id) => {
-          const canvasTile = textures[names.indexOf(id)]
-            .image as HTMLCanvasElement;
-          urls[id] = canvasTile.toDataURL("image/png");
-        });
-        setDockImages(urls);
-      });
-    };
-
-    let idleTimer = 0;
-    const offDone = onOpen("done", () => {
-      idleTimer = window.setTimeout(() => {
-        if ("requestIdleCallback" in window) {
-          window.requestIdleCallback(loadScene, { timeout: 4000 });
-        } else {
-          loadScene();
+        if (dockIcons.includes(names[i])) {
+          const glow = new THREE.Sprite(
+            new THREE.SpriteMaterial({
+              map: glowMap,
+              transparent: true,
+              depthWrite: false,
+              depthTest: false,
+              blending: THREE.AdditiveBlending,
+              opacity: 0,
+            }),
+          );
+          glow.renderOrder = 0;
+          group.add(glow);
+          glows[i] = glow;
         }
-      }, 600);
+      });
+
+      const urls: Record<string, string> = {};
+      dockIcons.forEach((id) => {
+        const canvasTile = textures[names.indexOf(id)]
+          .image as HTMLCanvasElement;
+        urls[id] = canvasTile.toDataURL("image/png");
+      });
+      setDockImages(urls);
     });
-    // 1,2 ekranu przed sekcją (też po powrocie w zapamiętane miejsce za wirem)
-    const loadFrom = () =>
-      Math.max(0, documentTop(wrapEl ?? section) - window.innerHeight * 1.2);
-    const sceneTrigger = ScrollTrigger.create({
-      start: loadFrom,
-      end: "max",
-      invalidateOnRefresh: true,
-      onEnter: loadScene,
-      onEnterBack: loadScene,
-    });
-    if (window.scrollY >= loadFrom()) loadScene();
 
     const unprojected = new THREE.Vector3();
     const dir = new THREE.Vector3();
@@ -292,8 +253,7 @@ export function IconVortex() {
       // 1. ZASADA MAKSYMALNEGO TEMPA I NIEZALEŻNEGO DOKOŃCZENIA:
       // Wyliczamy pożądaną zmianę delta w kierunku targetu z nałożonym limitem maxSpeed.
       const diff = target - cur;
-      const maxStep =
-        ((MOBILE ? VORTEX.mobileMaxSpeed : VORTEX.maxSpeed) || 1.8) * dt;
+      const maxStep = (VORTEX.maxSpeed || 1.8) * dt;
       const stepDelta = clamp(
         diff * (1 - Math.exp(-VORTEX.follow * dt)),
         -maxStep,
@@ -438,27 +398,6 @@ export function IconVortex() {
     };
 
     const ctx = gsap.context(() => {
-      if (MOBILE) {
-        // TELEFON: bez pinu. Pin przełącza element na position: fixed w JS, a przy natywnym
-        // scrollu palcem robi to z opóźnieniem względem przeglądarki (stąd drżenie).
-        // Sekcja jest więc "sticky" w wysokim kontenerze (czysty CSS, robi to kompozytor),
-        // a ScrollTrigger tylko czyta postęp przewijania kontenera.
-        ScrollTrigger.create({
-          trigger: wrapEl ?? section,
-          start: "top top",
-          end: "bottom bottom",
-          invalidateOnRefresh: true,
-          refreshPriority: pagePriority(section),
-          onUpdate: (self) => {
-            target = self.progress;
-          },
-          onRefresh: (self) => {
-            target = self.progress;
-          },
-        });
-        return;
-      }
-
       // 2. WIEKSZY EMPTY SCROLL:
       // Powiększamy wysokość dystansu przetrzymania (np. 1.8 * VORTEX.screens),
       // dając użytkownikowi więcej fizycznej przestrzeni przewijania na zablokowanym widoku.
@@ -501,14 +440,10 @@ export function IconVortex() {
     intersection.observe(section);
 
     gsap.ticker.add(tick);
-    // palec nie ma kursora: paralaksa kamery tylko tam, gdzie jest mysz
-    if (!MOBILE) window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointermove", onMove);
 
     return () => {
       disposed = true;
-      window.clearTimeout(idleTimer);
-      offDone();
-      sceneTrigger.kill();
       gsap.ticker.remove(tick);
       window.removeEventListener("pointermove", onMove);
       resizeObserver.disconnect();
@@ -524,11 +459,8 @@ export function IconVortex() {
     };
   }, []);
 
-  const body = (
-    <section
-      ref={root}
-      className={`relative overflow-hidden ${MOBILE ? "sticky top-0 h-svh" : "h-screen"}`}
-    >
+  return (
+    <section ref={root} className="relative h-screen overflow-hidden">
       <canvas ref={canvas} className="absolute inset-0 size-full" />
 
       <div
@@ -564,17 +496,5 @@ export function IconVortex() {
         document.body,
       )}
     </section>
-  );
-
-  // telefon: wysoki kontener, w którym sekcja "przykleja się" do góry ekranu
-  return MOBILE ? (
-    <div
-      ref={wrap}
-      style={{ height: `calc(100svh * ${1 + VORTEX.mobileScreens})` }}
-    >
-      {body}
-    </div>
-  ) : (
-    body
   );
 }
