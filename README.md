@@ -15,7 +15,7 @@
 ![Vercel](https://img.shields.io/badge/Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
 
 <!-- Main screenshot: full hero section on desktop -->
-<img src="docs/screenshots/hero.png" alt="Hero section of the portfolio on desktop" width="900" />
+<img src="docs/screenshots/hero.webp" alt="Hero section of the portfolio on desktop" width="900" />
 
 </div>
 
@@ -62,7 +62,7 @@ The Hero and About sections reveal text word by word using GSAP SplitText. Lenis
 
 <!-- Screenshot: About section or the language switcher -->
 <p align="center">
-  <img src="docs/screenshots/about.png" alt="About section with word-by-word text reveal" width="800" />
+  <img src="docs/screenshots/about.webp" alt="About section with word-by-word text reveal" width="800" />
 </p>
 
 ### 3D technology helix
@@ -71,7 +71,7 @@ A Three.js scene places the tools I work with on a helix. Its motion is driven b
 
 <!-- Screenshot: the helix section with icons spread out -->
 <p align="center">
-  <img src="docs/screenshots/helix.png" alt="3D helix of technology icons built with Three.js" width="800" />
+  <img src="docs/screenshots/helix.webp" alt="3D helix of technology icons built with Three.js" width="800" />
 </p>
 
 ### Interactive dock
@@ -80,7 +80,7 @@ A macOS-inspired dock magnifies the icons under the cursor. Hovering shows a pre
 
 <!-- Screenshot: dock with a preview card open -->
 <p align="center">
-  <img src="docs/screenshots/dock.png" alt="Dock with a magnified icon and a preview card" width="800" />
+  <img src="docs/screenshots/dock.webp" alt="Dock with a magnified icon and a preview card" width="800" />
 </p>
 
 ### Coding statistics
@@ -89,7 +89,7 @@ The FastAPI backend pulls data from CodeTime and stores it in Turso. The dashboa
 
 <!-- Screenshot: the CodeTime section -->
 <p align="center">
-  <img src="docs/screenshots/codetime.png" alt="CodeTime dashboard with activity heatmap and statistics" width="800" />
+  <img src="docs/screenshots/codetime.webp" alt="CodeTime dashboard with activity heatmap and statistics" width="800" />
 </p>
 
 ### Projects showcase
@@ -98,7 +98,7 @@ Projects are presented as a bento-style grid with a cinematic reveal for every c
 
 <!-- Screenshot: the Projects section -->
 <p align="center">
-  <img src="docs/screenshots/projects.png" alt="Projects section with a bento grid of project cards" width="800" />
+  <img src="docs/screenshots/projects.webp" alt="Projects section with a bento grid of project cards" width="800" />
 </p>
 
 ---
