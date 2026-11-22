@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { gsap, ScrollTrigger } from "../lib/gsap";
 import { stage, hooks, INTRO_PLAYS, INTRO_PATH } from "../lib/intro";
+import { MOBILE } from "../lib/device";
 
 // Paleta: ciepłe światło (bursztyn, złoto, szampan, miedź) na chłodnym granacie
 const COLORS = {
@@ -25,7 +26,7 @@ type Blob = {
   o: number[]; // jasność w kolejnych sekcjach
 };
 
-const BLOBS: Blob[] = [
+const ALL_BLOBS: Blob[] = [
   {
     // źródło ciepła w lewym górnym rogu
     rgb: COLORS.amber,
@@ -89,6 +90,9 @@ const BLOBS: Blob[] = [
   },
 ];
 
+// telefon: cztery główne plamy (bez małej, szampańskiej); mniej warstw do kompozycji
+const BLOBS = MOBILE ? ALL_BLOBS.slice(0, 4) : ALL_BLOBS;
+
 // barwy światła przy kursorze i ich "kotwice" na ekranie (0-1)
 const LIGHT = [
   { rgb: COLORS.gold, x: 0.12, y: 0.2 },
@@ -107,7 +111,7 @@ type Ray = {
   period: number; // s
   phase: number;
 };
-const RAYS: Ray[] = [
+const ALL_RAYS: Ray[] = [
   {
     rgb: COLORS.gold,
     angle: 11,
@@ -163,13 +167,15 @@ const RAYS: Ray[] = [
     phase: 0.9,
   },
 ];
+// telefon: trzy smugi (szeroka szampańska, bursztynowa i miedziana)
+const RAYS = MOBILE ? [1, 2, 4].map((i) => ALL_RAYS[i]) : ALL_RAYS;
 const RAY_SOURCE = { x: -0.07, y: -0.16 }; // ułamek ekranu (poza kadrem)
 const RAY_LENGTH = 100; // vmax
 const RAY_O = [1, 0.8, 0.5, 0.62]; // jasność smug w kolejnych sekcjach (po postępie scrolla)
 const LEAK_O = [1, 0.8, 0.45, 0.7]; // jasność przecieku światła w kolejnych sekcjach
 
 // mgła przy dole kadru
-const FOG = [
+const ALL_FOG = [
   {
     rgb: COLORS.slate,
     alpha: 0.55,
@@ -192,20 +198,23 @@ const FOG = [
   },
 ];
 
+// telefon: jedna mgła przy dole kadru
+const FOG = MOBILE ? ALL_FOG.slice(0, 1) : ALL_FOG;
+
 // ---------- strojenie ----------
 const TUNING = {
   parallax: 34, // px: maks. przesunięcie najgłębszej plamy pod wpływem światła
   idleMs: 2800, // po tylu ms bez ruchu myszy światło zaczyna wędrować samo
   scrollLag: 3.2, // jak szybko tło dogania scroll (większe = żywiej)
   // sprężyny: k = sztywność, c = tłumienie. Im mniejsze k, tym większa bezwładność.
-  tight: { size: 300, alpha: 0.5, k: 260, c: 34 },
-  core: { size: 760, alpha: 0.36, k: 80, c: 15 },
+  tight: { size: MOBILE ? 240 : 300, alpha: 0.5, k: 260, c: 34 },
+  core: { size: MOBILE ? 560 : 760, alpha: 0.36, k: 80, c: 15 },
   halo: { size: 1700, alpha: 0.2, k: 26, c: 8 },
 };
 
 // bokeh: złote cząstki z głębią ostrości (ustaw count na 0, żeby wyłączyć)
 const BOKEH = {
-  count: 560,
+  count: MOBILE ? 64 : 560, // telefon: kilkadziesiąt dużych, rozmytych krążków zamiast setek iskier
   speed: 7, // px/s dla najbliższej warstwy
   lightRadius: 560, // px: zasięg rozświetlania przez światło kursora
   idle: 0.8, // jasność bazowa
@@ -220,8 +229,23 @@ const PULSE = 900; // px: rozmiar fali światła przy kliknięciu
 const BASE = "#0d111c";
 
 // słabszy sprzęt: bez mieszania screen, dryfu i pyłu (dodatkowo jest też adaptacja w locie)
+// (telefony zgłaszają 4-6 rdzeni także przy mocnych procesorach, a i tak mają własną,
+// lżejszą ścieżkę MOBILE, więc ich tym nie karzemy)
 const LITE =
-  typeof navigator !== "undefined" && (navigator.hardwareConcurrency ?? 8) <= 4;
+  !MOBILE &&
+  typeof navigator !== "undefined" &&
+  (navigator.hardwareConcurrency ?? 8) <= 4;
+
+// Telefon: bez mix-blend-mode i filtrów (to najdroższe rzeczy dla GPU telefonu), bez ziarna,
+// winiety intro, najazdu kamery, fal po tapnięciu i warstw pomocniczych. Cząstki są mniej
+// liczne, większe i bardziej rozmyte (SOFT dokłada rozmycia, DISC powiększa krążki, GAIN
+// dokłada jasności, żeby mniej cząstek dawało podobny efekt), a tło jest aktualizowane
+// co drugą klatkę (30 fps wystarcza dla tak wolnych ruchów i zostawia czas na scroll).
+const SIMPLE = LITE || MOBILE;
+const SOFT = MOBILE ? 0.42 : 0;
+const DISC = MOBILE ? 1.7 : 1;
+const GAIN = MOBILE ? 1.5 : 1;
+const MOBILE_STEP_MS = 30;
 
 // ---------- pomocnicze ----------
 const clamp = (v: number, lo: number, hi: number) =>
@@ -355,12 +379,14 @@ const makeDust = (count: number): Mote[] => [
     );
   }),
   // pierwszy plan: duże, bardzo miękkie plamy tuż przed obiektywem (głębia jak w filmie)
-  ...Array.from({ length: Math.max(8, Math.round(count * 0.025)) }, () =>
-    makeMote(
-      1.15 + Math.random() * 0.15,
-      12 + Math.random() * 14,
-      0.4 + 0.4 * Math.random(),
-    ),
+  ...Array.from(
+    { length: Math.max(MOBILE ? 4 : 8, Math.round(count * 0.025)) },
+    () =>
+      makeMote(
+        1.15 + Math.random() * 0.15,
+        12 + Math.random() * 14,
+        0.4 + 0.4 * Math.random(),
+      ),
   ),
 ];
 
@@ -454,9 +480,9 @@ export function Ambient() {
     const rootEl = root.current;
     const tightEl = tightRef.current;
     const coreEl = coreRef.current;
-    const haloEl = haloRef.current;
-    const grainEl = grainRef.current;
-    if (!rootEl || !tightEl || !coreEl || !haloEl || !grainEl) return;
+    const haloEl = haloRef.current; // na telefonie go nie ma
+    const grainEl = grainRef.current; // na telefonie go nie ma
+    if (!rootEl || !tightEl || !coreEl) return;
 
     const dustCanvas = dustRef.current;
     const dustCtx = dustCanvas?.getContext("2d") ?? null;
@@ -492,7 +518,7 @@ export function Ambient() {
     const layers = [
       Array.from(tightEl.children) as HTMLElement[],
       Array.from(coreEl.children) as HTMLElement[],
-      Array.from(haloEl.children) as HTMLElement[],
+      ...(haloEl ? [Array.from(haloEl.children) as HTMLElement[]] : []),
     ];
 
     const view = { w: window.innerWidth, h: window.innerHeight };
@@ -515,11 +541,13 @@ export function Ambient() {
     const shown = LIGHT.map(() => -1);
     // liczba cząstek rośnie z powierzchnią ekranu (ultra-wide, 4K), żeby gęstość była ta sama
     const moteCount = () =>
-      clamp(
-        Math.round((BOKEH.count * view.w * view.h) / (1920 * 1080)),
-        360,
-        1000,
-      );
+      MOBILE
+        ? BOKEH.count
+        : clamp(
+            Math.round((BOKEH.count * view.w * view.h) / (1920 * 1080)),
+            360,
+            1000,
+          );
     const motes = dustOn ? makeDust(moteCount()) : [];
     const sprites = dustOn ? buildSprites() : [];
 
@@ -549,7 +577,9 @@ export function Ambient() {
 
     const sizeDust = () => {
       if (!dustCanvas || !dustCtx) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      // telefon: płótno w ok. 0,6 rozdzielczości ekranu; cząstki są miękkie, więc różnicy
+      // nie widać, a do narysowania jest kilka razy mniej pikseli
+      const dpr = MOBILE ? 0.6 : Math.min(window.devicePixelRatio || 1, 2);
       dustCanvas.width = Math.round(view.w * dpr);
       dustCanvas.height = Math.round(view.h * dpr);
       dustCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -597,19 +627,6 @@ export function Ambient() {
       } else if (zoomed) {
         rootEl.style.transform = "";
         zoomed = false;
-      }
-
-      // monitor płynności: pomijamy start, mierzymy ok. 100 klatek
-      // (dopiero po intro, żeby jego start nie wpływał na pomiar)
-      const settled =
-        stage.script < 0.001 &&
-        stage.light > 0.99 &&
-        stage.vignette < 0.01 &&
-        stage.zoom < 0.01;
-      if (!lite && settled && frames < 150) {
-        frames += 1;
-        if (frames > 45 && deltaMs < 100) frameSum += deltaMs;
-        if (frames === 150 && frameSum / 105 > 24) degrade();
       }
 
       // 1. postęp scrolla (wygładzony) i energia przewijania
@@ -695,12 +712,14 @@ export function Ambient() {
         stretch * 0.6,
         lightAngle,
       );
-      place(
-        haloEl,
-        halo,
-        ui * grow * sz ** 1.7 * (1 + 0.02 * lift),
-        reveal * (0.95 + 0.06 * lift),
-      );
+      if (haloEl) {
+        place(
+          haloEl,
+          halo,
+          ui * grow * sz ** 1.7 * (1 + 0.02 * lift),
+          reveal * (0.95 + 0.06 * lift),
+        );
+      }
 
       // 5. barwa światła zależy od pozycji i bardzo wolno dryfuje w czasie
       const nx = clamp01(core.x / view.w + 0.12 * Math.sin(time * 0.11));
@@ -931,19 +950,20 @@ export function Ambient() {
             (twinkle + glint) *
             stage.dust *
             reveal *
-            flare;
+            flare *
+            GAIN;
           if (a < 0.01) continue;
 
           // głębia ostrości: iskra → bokeh → welon, płynnie wraz z rozmyciem
           // ostrość podąża za światłem: cząstki w jego zasięgu wyostrzają się
           const b =
-            clamp01(Math.abs(m.z - focus) * 2.4 + stage.defocus) *
+            clamp01(Math.abs(m.z - focus) * 2.4 + stage.defocus + SOFT) *
             (1 - 0.5 * lit * (0.35 + 0.65 * eased));
           const mm = smooth(clamp01((b - 0.08) / 0.4));
           const nn = smooth(clamp01((b - 0.5) / 0.45));
           const set = sprites[m.hue];
           const coreD = m.size * unit * grow;
-          const discD = coreD * 1.7 + b * (16 + 30 * m.z) * unit;
+          const discD = (coreD * 1.7 + b * (16 + 30 * m.z) * unit) * DISC;
 
           stamp(dustCtx, set[0], x, y, coreD * 5, a * (1 - mm));
           stamp(
@@ -973,7 +993,7 @@ export function Ambient() {
       }
 
       // 10. ziarno filmowe: stała sekwencja w tempie ok. 11 klatek na sekundę
-      if (!calm) {
+      if (!calm && grainEl) {
         grainClock += dt;
         if (grainClock > 0.09) {
           grainClock = 0;
@@ -985,7 +1005,7 @@ export function Ambient() {
 
       // 11. intro: mocniejsze ziarno i zamknięta winieta na starcie
       const grainOpacity = (0.1 + 0.12 * stage.grain).toFixed(3);
-      if (grainOpacity !== lastGrain) {
+      if (grainEl && grainOpacity !== lastGrain) {
         lastGrain = grainOpacity;
         grainEl.style.opacity = grainOpacity;
       }
@@ -994,6 +1014,35 @@ export function Ambient() {
         lastShade = shade;
         shadeEl.style.opacity = shade;
       }
+    };
+
+    // monitor płynności: pomijamy start, mierzymy ok. 100 klatek (dopiero po intro, żeby jego
+    // start nie wpływał na pomiar). Liczy surowe klatki przeglądarki, także te, które na
+    // telefonie pomijamy w rysowaniu tła.
+    const monitor = (deltaMs: number) => {
+      const settled =
+        stage.script < 0.001 &&
+        stage.light > 0.99 &&
+        stage.vignette < 0.01 &&
+        stage.zoom < 0.01;
+      if (!lite && settled && frames < 150) {
+        frames += 1;
+        if (frames > 45 && deltaMs < 100) frameSum += deltaMs;
+        if (frames === 150 && frameSum / 105 > (MOBILE ? 27 : 24)) degrade();
+      }
+    };
+
+    // telefon: tło odświeżamy co ok. 33 ms (30 fps), scroll i reszta strony dostają resztę czasu
+    let pending = 0;
+    const onTick = (time: number, deltaMs: number) => {
+      monitor(deltaMs);
+      if (MOBILE) {
+        pending += deltaMs;
+        if (pending < MOBILE_STEP_MS) return;
+        deltaMs = pending;
+        pending = 0;
+      }
+      tick(time, deltaMs);
     };
 
     const onMove = (event: PointerEvent) => {
@@ -1007,6 +1056,16 @@ export function Ambient() {
       lastMove = -Infinity;
     };
     const onResize = () => {
+      // telefon: pasek adresu chowa się i pokazuje podczas scrolla, co zmienia tylko wysokość
+      // okna. Przebudowa płótna przy każdej takiej zmianie zacinałaby scroll, a warstwa tła
+      // jest rozciągnięta CSS-em (fixed inset-0), więc wystarczy ją zostawić
+      if (
+        MOBILE &&
+        window.innerWidth === view.w &&
+        Math.abs(window.innerHeight - view.h) < view.h * 0.25
+      ) {
+        return;
+      }
       view.w = window.innerWidth;
       view.h = window.innerHeight;
       sizeDust();
@@ -1063,12 +1122,12 @@ export function Ambient() {
     tick(0, 16);
 
     window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerdown", onDown);
+    if (!MOBILE) window.addEventListener("pointerdown", onDown);
     window.addEventListener("resize", onResize);
     document.documentElement.addEventListener("pointerleave", onLeave);
-    gsap.ticker.add(tick);
+    gsap.ticker.add(onTick);
     return () => {
-      gsap.ticker.remove(tick);
+      gsap.ticker.remove(onTick);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerdown", onDown);
       window.removeEventListener("resize", onResize);
@@ -1078,8 +1137,8 @@ export function Ambient() {
     };
   }, []);
 
-  const blend = LITE ? "" : "mix-blend-screen";
-  const soften = LITE ? undefined : "blur(9px)";
+  const blend = SIMPLE ? "" : "mix-blend-screen";
+  const soften = SIMPLE ? undefined : "blur(9px)";
 
   return (
     <div
@@ -1152,33 +1211,37 @@ export function Ambient() {
         />
       ))}
 
-      {/* pas światła pod wstęgą cząstek */}
-      <div
-        data-lane
-        data-blend
-        className={`absolute left-0 top-0 w-full will-change-transform ${blend}`}
-        style={{
-          height: "22vh",
-          opacity: 0,
-          background:
-            "linear-gradient(to bottom, transparent, rgb(255 196 140 / 0.07) 50%, transparent)",
-        }}
-      />
+      {!MOBILE && (
+        <>
+          {/* pas światła pod wstęgą cząstek */}
+          <div
+            data-lane
+            data-blend
+            className={`absolute left-0 top-0 w-full will-change-transform ${blend}`}
+            style={{
+              height: "22vh",
+              opacity: 0,
+              background:
+                "linear-gradient(to bottom, transparent, rgb(255 196 140 / 0.07) 50%, transparent)",
+            }}
+          />
 
-      {/* ciepły przeciek światła przy lewej krawędzi, jak na taśmie filmowej */}
-      <div
-        data-leak
-        data-blend
-        className={`absolute left-0 top-0 will-change-transform ${blend}`}
-        style={{
-          width: "46vw",
-          height: "110vh",
-          marginTop: "-5vh",
-          opacity: 0,
-          background:
-            "radial-gradient(ellipse at 0% 50%, rgb(255 118 72 / 0.42), rgb(255 188 120 / 0.16) 42%, transparent 72%)",
-        }}
-      />
+          {/* ciepły przeciek światła przy lewej krawędzi, jak na taśmie filmowej */}
+          <div
+            data-leak
+            data-blend
+            className={`absolute left-0 top-0 will-change-transform ${blend}`}
+            style={{
+              width: "46vw",
+              height: "110vh",
+              marginTop: "-5vh",
+              opacity: 0,
+              background:
+                "radial-gradient(ellipse at 0% 50%, rgb(255 118 72 / 0.42), rgb(255 188 120 / 0.16) 42%, transparent 72%)",
+            }}
+          />
+        </>
+      )}
 
       {/* smugi światła z lewego górnego rogu */}
       <div
@@ -1209,24 +1272,26 @@ export function Ambient() {
       <canvas ref={dustRef} className="absolute inset-0 size-full" />
 
       {/* światło przy kursorze: szeroka poświata, rdzeń i ostry punkt */}
-      <div
-        ref={haloRef}
-        data-blend
-        className={`absolute left-0 top-0 will-change-transform ${blend}`}
-        style={{
-          width: TUNING.halo.size,
-          height: TUNING.halo.size,
-          opacity: 0,
-        }}
-      >
-        {LIGHT.map((l) => (
-          <div
-            key={l.rgb}
-            className="absolute inset-0"
-            style={{ background: glow(l.rgb, TUNING.halo.alpha), opacity: 0 }}
-          />
-        ))}
-      </div>
+      {!MOBILE && (
+        <div
+          ref={haloRef}
+          data-blend
+          className={`absolute left-0 top-0 will-change-transform ${blend}`}
+          style={{
+            width: TUNING.halo.size,
+            height: TUNING.halo.size,
+            opacity: 0,
+          }}
+        >
+          {LIGHT.map((l) => (
+            <div
+              key={l.rgb}
+              className="absolute inset-0"
+              style={{ background: glow(l.rgb, TUNING.halo.alpha), opacity: 0 }}
+            />
+          ))}
+        </div>
+      )}
       <div
         ref={coreRef}
         data-blend
@@ -1264,56 +1329,64 @@ export function Ambient() {
         ))}
       </div>
 
-      {/* smuga anamorficzna: pozioma kreska światła, rośnie przy ruchu */}
-      <div
-        data-streak
-        data-blend
-        className={`absolute left-0 top-0 will-change-transform ${blend}`}
-        style={{
-          width: "96vw",
-          height: 3,
-          opacity: 0,
-          filter: soften ? "blur(1.5px)" : undefined,
-          background: strip(COLORS.champagne, 0.9, 0.09, 28),
-        }}
-      />
+      {!MOBILE && (
+        <>
+          {/* smuga anamorficzna: pozioma kreska światła, rośnie przy ruchu */}
+          <div
+            data-streak
+            data-blend
+            className={`absolute left-0 top-0 will-change-transform ${blend}`}
+            style={{
+              width: "96vw",
+              height: 3,
+              opacity: 0,
+              filter: soften ? "blur(1.5px)" : undefined,
+              background: strip(COLORS.champagne, 0.9, 0.09, 28),
+            }}
+          />
 
-      {/* fale światła przy kliknięciu (pula, wielokrotnego użytku) */}
-      {[0, 1, 2].map((i) => (
-        <div
-          key={i}
-          data-pulse
-          data-blend
-          className={`absolute left-0 top-0 rounded-full ${blend}`}
-          style={{
-            width: PULSE,
-            height: PULSE,
-            marginLeft: -PULSE / 2,
-            marginTop: -PULSE / 2,
-            opacity: 0,
-          }}
-        />
-      ))}
+          {/* fale światła przy kliknięciu (pula, wielokrotnego użytku) */}
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              data-pulse
+              data-blend
+              className={`absolute left-0 top-0 rounded-full ${blend}`}
+              style={{
+                width: PULSE,
+                height: PULSE,
+                marginLeft: -PULSE / 2,
+                marginTop: -PULSE / 2,
+                opacity: 0,
+              }}
+            />
+          ))}
+        </>
+      )}
 
-      {/* grading: ciepłe półcienie w rogu światła, chłodne w przeciwległym */}
-      <div
-        className="absolute inset-0 mix-blend-soft-light"
-        style={{
-          background:
-            "linear-gradient(155deg, rgb(255 186 120 / 0.16) 0%, transparent 38%, transparent 62%, rgb(46 70 140 / 0.2) 100%)",
-        }}
-      />
+      {!MOBILE && (
+        <>
+          {/* grading: ciepłe półcienie w rogu światła, chłodne w przeciwległym */}
+          <div
+            className="absolute inset-0 mix-blend-soft-light"
+            style={{
+              background:
+                "linear-gradient(155deg, rgb(255 186 120 / 0.16) 0%, transparent 38%, transparent 62%, rgb(46 70 140 / 0.2) 100%)",
+            }}
+          />
 
-      {/* winieta intro: zamknięta na starcie, otwiera się razem ze światłem */}
-      <div
-        ref={shadeRef}
-        className="absolute inset-0"
-        style={{
-          opacity: INTRO_PLAYS ? 1 : 0,
-          background:
-            "radial-gradient(ellipse at 50% 45%, transparent 6%, rgb(3 5 12 / 0.94) 72%)",
-        }}
-      />
+          {/* winieta intro: zamknięta na starcie, otwiera się razem ze światłem */}
+          <div
+            ref={shadeRef}
+            className="absolute inset-0"
+            style={{
+              opacity: INTRO_PLAYS ? 1 : 0,
+              background:
+                "radial-gradient(ellipse at 50% 45%, transparent 6%, rgb(3 5 12 / 0.94) 72%)",
+            }}
+          />
+        </>
+      )}
 
       {/* winieta */}
       <div
@@ -1324,12 +1397,14 @@ export function Ambient() {
         }}
       />
 
-      {/* ziarno filmowe (overlay: nie podnosi czerni, usuwa banding gradientów) */}
-      <div
-        ref={grainRef}
-        className="absolute -inset-24 opacity-[0.1] mix-blend-overlay"
-        style={{ backgroundImage: GRAIN }}
-      />
+      {/* ziarno filmowe (overlay: nie podnosi czerni, usuwa banding gradientów); bez niego na telefonie */}
+      {!MOBILE && (
+        <div
+          ref={grainRef}
+          className="absolute -inset-24 opacity-[0.1] mix-blend-overlay"
+          style={{ backgroundImage: GRAIN }}
+        />
+      )}
     </div>
   );
 }

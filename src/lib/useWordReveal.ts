@@ -3,6 +3,7 @@ import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger, SplitText } from "./gsap";
 import { MOTION } from "./motion";
 import { onOpen } from "./intro";
+import { MOBILE, blur } from "./device";
 
 // Rejestr aktywnych tekstów, żeby animację słów dało się odtworzyć ponownie bez
 // scrollowania (np. po powrocie na górę, patrz returnToTop.ts).
@@ -11,7 +12,7 @@ const replays = new Set<Replay>();
 
 // Linia, powyżej której tekst jest już "wchodzący": to samo co MOTION.revealStart
 // ("top 60%"), czyli górna krawędź na 60% wysokości ekranu.
-const REVEAL_LINE = 0.6;
+const REVEAL_LINE = MOBILE ? 0.96 : 0.6;
 
 // Chowa teraz widoczne teksty (słowa wracają do stanu początkowego) i zwraca funkcję,
 // która odtwarza dla nich dokładnie tę samą animację co przy normalnym wejściu.
@@ -53,10 +54,14 @@ export function useWordReveal(ref: RefObject<HTMLElement | null>) {
           const tween = gsap.from(self.words, {
             yPercent: 28,
             opacity: 0,
-            filter: "blur(10px)", // słowa wyostrzają się jak w przeostrzeniu ostrości
-            duration: 1.5,
+            ...blur(10), // słowa wyostrzają się jak w przeostrzeniu ostrości (na mobile bez rozmycia)
+            duration: MOBILE ? 0.75 : 1.5, // telefon: krócej, bo scroll palcem jest szybki
             ease: "power3.out", // spokojnie, bez odbicia
-            stagger: { amount: Math.min(1.1, self.words.length * 0.07) },
+            stagger: {
+              amount: MOBILE
+                ? Math.min(0.45, self.words.length * 0.04)
+                : Math.min(1.1, self.words.length * 0.07),
+            },
             paused: true,
           });
 

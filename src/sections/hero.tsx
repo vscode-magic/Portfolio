@@ -6,6 +6,7 @@ import { Fade } from "../components/fade";
 import { useSectionHold } from "../lib/useSectionHold";
 import { ScrollHint } from "../components/scrollHint";
 import { useIntroGate } from "../lib/intro";
+import { MOBILE } from "../lib/device";
 
 export function Hero() {
   const { t } = useTranslation();
@@ -21,7 +22,9 @@ export function Hero() {
     <section
       ref={root}
       data-hold
-      className="relative flex min-h-screen flex-col justify-between px-6 py-8 md:px-[max(4rem,calc((100vw-120rem)/2))]"
+      className={`relative flex flex-col px-6 py-8 md:px-[max(4rem,calc((100vw-120rem)/2))] ${
+        MOBILE ? "min-h-svh justify-start" : "min-h-screen justify-between"
+      }`}
     >
       <header
         className={`relative z-10 flex items-center justify-between transition-opacity duration-[1400ms] ease-out ${
@@ -32,7 +35,12 @@ export function Hero() {
         <LanguageSwitch />
       </header>
 
-      <Fade mode="out" className="relative z-10 max-w-5xl pb-24">
+      {/* telefon: tekst zaczyna się w stałym miejscu od góry (wcześniej był przyklejony do dołu,
+          więc dłuższy polski tekst wyglądał na wyżej niż angielski) */}
+      <Fade
+        mode="out"
+        className={`relative z-10 max-w-5xl ${MOBILE ? "mt-[22svh]" : "pb-24"}`}
+      >
         <Reveal
           as="p"
           text={t("hero.eyebrow")}

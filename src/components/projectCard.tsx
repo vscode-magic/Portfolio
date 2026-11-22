@@ -3,6 +3,7 @@ import { useGSAP } from "@gsap/react";
 import { useTranslation } from "react-i18next";
 import { gsap, ScrollTrigger } from "../lib/gsap";
 import type { Project } from "../lib/projects";
+import { MOBILE } from "../lib/device";
 
 type Props = {
   project: Project;
@@ -48,21 +49,32 @@ export function ProjectCard({
           gsap.set(frame, { clearProps: "clipPath" });
         },
       });
-      tl.fromTo(
-        frame,
-        {
-          opacity: 0,
-          clipPath: `inset(46% 0% 46% 0% round ${RADIUS}px)`,
-        },
-        {
-          opacity: 1,
-          clipPath: `inset(0% 0% 0% 0% round ${RADIUS}px)`,
-          duration: 1.5,
-          ease: "expo.out",
-        },
-        0,
-      );
-      if (shot) {
+      if (MOBILE) {
+        // telefon: prosty wjazd (przezroczystość + ruch). Animacja maski clip-path i
+        // powiększenia zrzutu przerysowuje kafel w każdej klatce, a to zacina scroll
+        tl.fromTo(
+          frame,
+          { opacity: 0, y: 24 },
+          { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" },
+          0,
+        );
+      } else {
+        tl.fromTo(
+          frame,
+          {
+            opacity: 0,
+            clipPath: `inset(46% 0% 46% 0% round ${RADIUS}px)`,
+          },
+          {
+            opacity: 1,
+            clipPath: `inset(0% 0% 0% 0% round ${RADIUS}px)`,
+            duration: 1.5,
+            ease: "expo.out",
+          },
+          0,
+        );
+      }
+      if (shot && !MOBILE) {
         tl.fromTo(
           shot,
           { scale: 1.12 },
@@ -73,13 +85,18 @@ export function ProjectCard({
       tl.fromTo(
         lines,
         { yPercent: 110 },
-        { yPercent: 0, duration: 1, ease: "power4.out", stagger: 0.08 },
-        0.5,
+        {
+          yPercent: 0,
+          duration: MOBILE ? 0.7 : 1,
+          ease: "power4.out",
+          stagger: 0.08,
+        },
+        MOBILE ? 0.25 : 0.5,
       );
 
       ScrollTrigger.create({
         trigger: el,
-        start: "top 90%",
+        start: MOBILE ? "top 92%" : "top 90%",
         onEnter: () => tl.play(),
       });
       ScrollTrigger.create({
@@ -130,10 +147,14 @@ export function ProjectCard({
           }`}
           style={{
             borderRadius: RADIUS,
-            boxShadow: "0 28px 70px -34px rgba(2,4,12,0.9)",
+            boxShadow: MOBILE
+              ? "0 14px 30px -18px rgba(2,4,12,0.8)"
+              : "0 28px 70px -34px rgba(2,4,12,0.9)",
           }}
         >
-          {!missing && (
+          {/* rozmyte tło z tego samego zrzutu: tylko na komputerze (blur-2xl na każdej karcie
+              to na telefonie spory koszt) */}
+          {!missing && !MOBILE && (
             <img
               src={project.image}
               alt=""
@@ -148,7 +169,9 @@ export function ProjectCard({
 
           <div
             data-shot
-            className="absolute inset-0 flex items-center justify-center p-3.5"
+            className={`absolute inset-0 flex items-center justify-center ${
+              MOBILE ? "" : "p-3.5"
+            }`}
           >
             {!missing && (
               <img
@@ -158,9 +181,14 @@ export function ProjectCard({
                 decoding="async"
                 draggable={false}
                 onError={() => setMissing(true)}
-                className={`max-h-full max-w-full rounded-xl object-contain shadow-[0_18px_50px_-18px_rgba(0,0,0,0.9)] ring-1 ring-white/10 transition-transform duration-[1400ms] ease-out ${
-                  focused ? "scale-[1.03]" : "scale-100"
-                }`}
+                className={
+                  MOBILE
+                    ? // telefon: zrzut wypełnia cały kafel zamiast być małą miniaturką w ramce
+                      "size-full object-cover object-top"
+                    : `max-h-full max-w-full rounded-xl object-contain shadow-[0_18px_50px_-18px_rgba(0,0,0,0.9)] ring-1 ring-white/10 transition-transform duration-[1400ms] ease-out ${
+                        focused ? "scale-[1.03]" : "scale-100"
+                      }`
+                }
               />
             )}
           </div>
@@ -196,9 +224,9 @@ export function ProjectCard({
           <div className="overflow-hidden">
             <span
               data-line
-              className={`block truncate text-sm transition-colors duration-500 ${
-                focused ? "text-white/70" : "text-white/45"
-              }`}
+              className={`block text-sm transition-colors duration-500 ${
+                MOBILE ? "" : "truncate"
+              } ${focused ? "text-white/70" : "text-white/45"}`}
             >
               {t(`projects.items.${project.id}.summary`)}
             </span>

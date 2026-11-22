@@ -2,6 +2,7 @@ import { gsap, ScrollTrigger } from "./gsap";
 import { INTRO_PATH, stage } from "./intro";
 import { smoothScroll } from "./useSmoothScroll";
 import { prepareWordReplay } from "./useWordReveal";
+import { MOBILE, blur, unblur } from "./device";
 
 /* =========================================================================
    returnToTop.ts: "wróć na górę" jako animacja tła, a nie zwykły scroll
@@ -119,9 +120,11 @@ export function returnToTop(): void {
 
   if (running) return;
 
-  // bez ruchu albo już na górze: zwykły, krótki scroll
-  if (reduce || window.scrollY < 4) {
-    if (lenis) lenis.scrollTo(0, { duration: reduce ? 0.8 : 1.2 });
+  // bez ruchu, już na górze albo na telefonie (tam nie rozmywamy całych sekcji
+  // i nie robimy najazdu kamery): zwykły, płynny scroll
+  if (reduce || MOBILE || window.scrollY < 4) {
+    if (lenis)
+      lenis.scrollTo(0, { duration: reduce ? 0.8 : MOBILE ? 1.6 : 1.2 });
     else window.scrollTo({ top: 0 });
     return;
   }
@@ -214,7 +217,7 @@ export function returnToTop(): void {
     // 1. zasłona: treść rozpuszcza się w rozmyciu, nieco przed tłem
     .to(
       targets,
-      { opacity: 0, filter: "blur(8px)", duration: 0.65, ease: "power2.in" },
+      { opacity: 0, ...blur(8), duration: 0.65, ease: "power2.in" },
       0,
     )
     // tło "wdycha": okno się zamyka, ostrość ucieka, wszystko wraca do światła
@@ -244,7 +247,7 @@ export function returnToTop(): void {
     // treść (nagłówek, nawigacja) wyostrza się, gdy tło już świeci
     .to(
       targets,
-      { opacity: 1, filter: "blur(0px)", duration: 0.9, ease: "power2.out" },
+      { opacity: 1, ...unblur, duration: 0.9, ease: "power2.out" },
       T + 0.5,
     )
     // słowa wchodzą tą samą animacją co zawsze, gdy światło dociera do nagłówka

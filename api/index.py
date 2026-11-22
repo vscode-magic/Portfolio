@@ -53,10 +53,13 @@ app = FastAPI(
 )
 
 
-def cache(response: Response, s_maxage: int, stale: int = 0) -> None:
-    """Pozwala CDN-owi Vercela współdzielić odpowiedź między odwiedzającymi."""
+def cache(
+    response: Response, s_maxage: int, stale: int = 0, browser: int = 0
+) -> None:
+    """Pozwala CDN-owi Vercela współdzielić odpowiedź między odwiedzającymi, a przeglądarce
+    (browser > 0) trzymać ją lokalnie, więc zwykłe odświeżenie strony nie pobiera jej ponownie."""
     response.headers["Cache-Control"] = (
-        f"public, s-maxage={s_maxage}, stale-while-revalidate={stale}"
+        f"public, max-age={browser}, s-maxage={s_maxage}, stale-while-revalidate={stale}"
     )
 
 

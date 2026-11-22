@@ -15,11 +15,20 @@ html {
   /* płynna skala interfejsu: 16px przy 1080 px wysokości, rośnie na dużych ekranach
      (1440p, 4K, ultra-wide), a na małych i telefonach zostaje 16px */
   font-size: clamp(16px, 1.4815vmin, 28px);
+  /* bez przesuwania strony na boki (na telefonie dało się ją przeciągnąć w poziomie);
+     clip nie tworzy kontenera przewijania, więc nie psuje sticky ani scrolla.
+     Pierwsza linia to zapas dla starych przeglądarek bez clip. */
+  overflow-x: hidden;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
 }
 
 body {
   font-family: var(--font-sans);
   overflow-x: hidden;
+  overflow-x: clip;
+  /* przewijanie tylko w pionie (poziomo przewijają się tylko elementy z własnym scrollem) */
+  touch-action: pan-y pinch-zoom;
   scrollbar-width: none;
 }
 
@@ -61,6 +70,23 @@ body::-webkit-scrollbar {
     0 1px 2px rgb(0 0 0 / 0.22),
     0 30px 80px -34px rgb(2 4 12 / 0.75),
     0 0 80px -30px color-mix(in srgb, var(--color-accent) 40%, transparent);
+
+  /* telefon: backdrop-filter (blur 34 px + saturate) nad ruchomym tłem i scrollem to jeden z
+     najdroższych efektów, więc szkło jest tam zwykłą, półprzezroczystą taflą bez rozmycia
+     tego, co pod spodem; krawędzie i światło z lewego górnego rogu zostają */
+  html[data-mobile] & {
+    background:
+      linear-gradient(145deg,
+        rgb(255 255 255 / 0.1) 0%,
+        rgb(255 255 255 / 0.04) 55%,
+        rgb(255 255 255 / 0.07) 100%),
+      rgb(18 24 42 / 0.62);
+    backdrop-filter: none;
+    box-shadow:
+      inset 1px 1px 0 rgb(255 255 255 / 0.2),
+      inset -1px -1px 0 rgb(255 255 255 / 0.05),
+      0 10px 28px -14px rgb(2 4 12 / 0.7);
+  }
 }
 
 /* ta sama tafla, ale gęstsza: dla okienek, tooltipów i list rozwijanych (czytelność nad treścią) */
@@ -78,6 +104,16 @@ body::-webkit-scrollbar {
     inset 1px 1px 0 rgb(255 255 255 / 0.18),
     inset -1px -1px 0 rgb(255 255 255 / 0.04),
     0 30px 80px -24px rgb(2 4 12 / 0.85);
+
+  /* telefon: gęsta tafla bez rozmycia tła (patrz .glass) */
+  html[data-mobile] & {
+    background: linear-gradient(145deg, rgb(32 38 58 / 0.96), rgb(14 18 30 / 0.97));
+    backdrop-filter: none;
+    box-shadow:
+      inset 1px 1px 0 rgb(255 255 255 / 0.16),
+      inset -1px -1px 0 rgb(255 255 255 / 0.04),
+      0 14px 34px -14px rgb(2 4 12 / 0.85);
+  }
 }
 
 /* własny kursor tylko na urządzeniach z myszą */
@@ -95,4 +131,228 @@ body::-webkit-scrollbar {
   background-image: repeating-linear-gradient(135deg,
       rgb(255 255 255 / 0.08) 0 1px,
       transparent 1px 7px);
+}
+
+/* pasy ikon w sekcji technologii na telefonie (zamiast wiru 3D): sam transform, więc
+   animacja chodzi na kompozytorze i nie obciąża głównego wątku; margines zamiast gap,
+   dzięki czemu przesunięcie o -50% zapętla się bez skoku */
+@keyframes marquee {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee {
+  animation: marquee 40s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    animation: none;
+  }
+}
+
+/* ---------- tło na telefon (components/ambientMobile.tsx) ----------
+   Wszystko to sam transform i opacity, więc animacje chodzą na kompozytorze GPU i nie
+   zależą od głównego wątku. Wysokość 100lvh (stała, niezależna od paska adresu) sprawia,
+   że tło nie skacze i nie skaluje się przy przewijaniu. */
+.amb-root {
+  height: 100vh;
+  height: 100lvh;
+}
+
+.amb-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes amb-a {
+  from {
+    transform: translate3d(-3vw, -2vh, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(5vw, 4vh, 0) scale(1.1);
+  }
+}
+
+@keyframes amb-b {
+  from {
+    transform: translate3d(3vw, 3vh, 0) scale(1.08);
+  }
+
+  to {
+    transform: translate3d(-5vw, -3vh, 0) scale(1);
+  }
+}
+
+.amb-a {
+  animation: amb-a 20s ease-in-out infinite alternate;
+  transform-origin: 40% 30%;
+}
+
+.amb-b {
+  animation: amb-b 24s ease-in-out infinite alternate;
+  transform-origin: 60% 50%;
+}
+
+.amb-lamp {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min(130vw, 76lvh);
+  height: min(130vw, 76lvh);
+  animation: amb-lamp 36s ease-in-out infinite;
+}
+
+@keyframes amb-lamp {
+
+  0%,
+  100% {
+    transform: translate3d(-24vw, -8lvh, 0) scale(1);
+    opacity: 0.9;
+  }
+
+  25% {
+    transform: translate3d(26vw, 8lvh, 0) scale(1.12);
+    opacity: 1;
+  }
+
+  50% {
+    transform: translate3d(-4vw, 36lvh, 0) scale(0.95);
+    opacity: 0.85;
+  }
+
+  75% {
+    transform: translate3d(36vw, 52lvh, 0) scale(1.08);
+    opacity: 1;
+  }
+}
+
+.amb-rays {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 130%;
+  transform-origin: 10% 0;
+  animation: amb-rays 16s ease-in-out infinite alternate;
+}
+
+@keyframes amb-rays {
+  from {
+    transform: rotate(-2.2deg);
+    opacity: 0.8;
+  }
+
+  to {
+    transform: rotate(2.4deg);
+    opacity: 1;
+  }
+}
+
+/* cząstki: kołysanie na boki (zewnętrzny element) i płynięcie w górę o dokładnie jeden kafel
+   (wewnętrzny element: dwa kafle jeden pod drugim, -50% = wysokość jednego), bez szwu */
+.amb-sway {
+  position: absolute;
+  inset: 0;
+}
+
+.amb-flow {
+  position: absolute;
+  left: -8%;
+  top: 0;
+  width: 116%;
+  height: 200%;
+}
+
+.amb-flow canvas {
+  display: block;
+  width: 100%;
+  height: 50%;
+}
+
+@keyframes amb-rise {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+.amb-flow-1 {
+  animation: amb-rise 110s linear infinite;
+}
+
+.amb-flow-2 {
+  animation: amb-rise 70s linear infinite;
+}
+
+.amb-flow-3 {
+  animation: amb-rise 46s linear infinite;
+}
+
+@keyframes amb-sway-1 {
+  from {
+    transform: translate3d(-3vw, 0, 0);
+    opacity: 0.8;
+  }
+
+  to {
+    transform: translate3d(3vw, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes amb-sway-2 {
+  from {
+    transform: translate3d(3vw, 0, 0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translate3d(-4vw, 0, 0);
+    opacity: 0.75;
+  }
+}
+
+@keyframes amb-sway-3 {
+  from {
+    transform: translate3d(-4vw, 0, 0);
+    opacity: 0.85;
+  }
+
+  to {
+    transform: translate3d(4vw, 0, 0);
+    opacity: 1;
+  }
+}
+
+.amb-sway-1 {
+  animation: amb-sway-1 17s ease-in-out infinite alternate;
+}
+
+.amb-sway-2 {
+  animation: amb-sway-2 13s ease-in-out infinite alternate;
+}
+
+.amb-sway-3 {
+  animation: amb-sway-3 10s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .amb-a,
+  .amb-b,
+  .amb-lamp,
+  .amb-rays,
+  .amb-flow,
+  .amb-sway {
+    animation: none;
+  }
 }

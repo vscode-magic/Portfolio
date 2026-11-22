@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { gsap, ScrollTrigger } from "./gsap";
+import { MOBILE } from "./device";
 
 /* =========================================================================
    intro.ts: całe wejście na stronę w jednym pliku (zastępuje introFx.tsx)
@@ -8,7 +9,8 @@ import { gsap, ScrollTrigger } from "./gsap";
    2. scena         stan czytany przez ambient.tsx w każdej klatce
    3. start         zasłona z index.html + odświeżanie layoutu w tle (bez czekania)
    4. bramki        kiedy hero pokazuje tekst, nawigację i odblokowuje scroll
-   5. scenariusze   playQuick (zwykłe wejście) i playIntro (pełne, ok. 5,2 s)
+   5. scenariusze   playQuick (zwykłe wejście) i playIntro (pełne, ok. 5,2 s;
+                    na telefonie prostsze i łagodniejsze, ok. 2,1 s)
    6. startEntrance jedyna funkcja, którą wywołuje app.tsx
    ========================================================================= */
 
@@ -85,8 +87,26 @@ const START: typeof FINAL = {
   boost: 0,
 };
 
+// Stan początkowy intro na telefonie: bez najazdu kamery, winiety i ziarna (każdy z tych
+// efektów to pełnoekranowa warstwa, którą telefon musi przerysowywać w każdej klatce).
+// Zostaje tylko łagodne rozjaśnianie: światło, plamy i pył wyłaniają się z ciemności.
+const START_MOBILE: typeof FINAL = {
+  ...START,
+  size: 0.6,
+  rays: 1,
+  burst: 1,
+  zoom: 0,
+  script: 0,
+  path: 1,
+  vignette: 0,
+  grain: 0,
+};
+const START_NOW = MOBILE ? START_MOBILE : START;
+
 export const stage: typeof FINAL = {
-  ...(INTRO_PLAYS ? START : { ...FINAL, light: 0, defocus: 0.7, zoom: 0.4 }),
+  ...(INTRO_PLAYS
+    ? START_NOW
+    : { ...FINAL, light: 0, defocus: 0.7, zoom: MOBILE ? 0 : 0.4 }),
 };
 
 // Trasa światła (0-1 ekranu): zapłon pośrodku, powolny zjazd w stronę nagłówka (lewy dół).
@@ -180,18 +200,24 @@ export function onOpen(gate: Gate, cb: () => void): () => void {
 
 /* ---------- 5a. zwykłe wejście (bez pełnego intro) ---------- */
 
-// Światło rozwija się spokojnie po zdjęciu zasłony; tekst i scroll są od razu.
+// Światło rozwija się szybko i spokojnie po zdjęciu zasłony (to wejście po odświeżeniu,
+// nie pełne intro); tekst i scroll są od razu.
 function playQuick(): () => void {
   openAll();
   const tweens = [
-    gsap.to(stage, { light: 1, duration: 2.2, delay: 0.2, ease: "power2.out" }),
+    gsap.to(stage, {
+      light: 1,
+      duration: 1.1,
+      delay: 0.05,
+      ease: "power2.out",
+    }),
     gsap.to(stage, {
       defocus: 0,
-      duration: 2.8,
-      delay: 0.2,
+      duration: 1.5,
+      delay: 0.05,
       ease: "power2.inOut",
     }),
-    gsap.to(stage, { zoom: 0, duration: 3, delay: 0.2, ease: "power2.out" }),
+    gsap.to(stage, { zoom: 0, duration: 1.8, delay: 0.05, ease: "power2.out" }),
   ];
   return () => tweens.forEach((t) => t.kill());
 }
@@ -248,47 +274,8 @@ const LIGHT = { peak: 0.55, dip: 0.15 };
 const MODIFIERS = new Set(["Shift", "Control", "Alt", "Meta"]);
 const SKIP_EVENTS = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
 
-function playIntro(): () => void {
-  if (!INTRO_PLAYS) return () => {};
-
-  Object.assign(stage, START);
-  open.text = open.chrome = open.done = false;
-  emit();
-
-  // chwilowe przycięcia (np. montowanie elementów) nie przeskakują animacji,
-  // tylko ją na moment wstrzymują
-  gsap.ticker.lagSmoothing(120, 33);
-
-  let finished = false;
-  let speedUp: gsap.core.Tween | null = null;
-
-  // Domyka scenę w stanie końcowym i oddaje stronę użytkownikowi.
-  // Wołane przez koniec osi czasu albo przez sprzątanie (HMR, odmontowanie),
-  // dzięki czemu scroll nigdy nie zostaje zablokowany.
-  const finish = () => {
-    if (finished) return;
-    finished = true;
-    speedUp?.kill();
-    gsap.ticker.lagSmoothing(0);
-    Object.assign(stage, FINAL);
-    openAll();
-    SKIP_EVENTS.forEach((e) => window.removeEventListener(e, skip));
-  };
-
-  const tl = gsap.timeline({ onComplete: finish });
-
-  // dowolna interakcja płynnie przyspiesza intro (rozpędzenie, nie skok)
-  function skip(e: Event) {
-    if (speedUp) return;
-    if (e.type === "keydown" && MODIFIERS.has((e as KeyboardEvent).key)) return;
-    speedUp = gsap.to(tl, {
-      timeScale: 6,
-      duration: 0.35,
-      ease: "power2.in",
-      overwrite: true,
-    });
-  }
-
+// Pełne intro (komputer): cała oś czasu opisana w komentarzu wyżej.
+function buildFullTimeline(tl: gsap.core.Timeline) {
   tl
     // kamera: wolny najazd od pierwszej do ostatniej klatki
     .to(stage, { zoom: 0, duration: 4.8, ease: "power2.out" }, 0)
@@ -332,6 +319,70 @@ function playIntro(): () => void {
       T.handoff,
     )
     .call(() => openGate("done"), [], T.done);
+}
+
+// Intro na telefonie (ok. 2,1 s): jeden łagodny ruch zamiast czterech aktów.
+// Z ciemności wyłaniają się światło, kolorowe plamy i pył (rozmyte krążki bokeh,
+// które powoli się wyostrzają). Nie ma najazdu kamery, winiety, ziarna, smug ani
+// sceny z "oddechem", bo to wszystko pełnoekranowe warstwy, których telefon nie
+// uciągnie w płynnych 60 klatkach. Tekst wchodzi, gdy światło jest w połowie,
+// a scroll odblokowuje się równo z końcem ruchu.
+const TM = { text: 0.9, chrome: 1.4, done: 2.1 };
+
+function buildMobileTimeline(tl: gsap.core.Timeline) {
+  tl.to(stage, { light: 1, duration: 1.7, ease: "sine.inOut" }, 0.05)
+    .to(stage, { size: 1, duration: 1.8, ease: "sine.out" }, 0.05)
+    .to(stage, { bloom: 1, duration: 2.0, ease: "sine.inOut" }, 0.1)
+    .to(stage, { defocus: 0, duration: 1.7, ease: "sine.inOut" }, 0.15)
+    .to(stage, { dust: 1, duration: 1.6, ease: "sine.inOut" }, 0.25)
+    .call(() => openGate("text"), [], TM.text)
+    .call(() => openGate("chrome"), [], TM.chrome)
+    .call(() => openGate("done"), [], TM.done);
+}
+
+function playIntro(): () => void {
+  if (!INTRO_PLAYS) return () => {};
+
+  Object.assign(stage, START_NOW);
+  open.text = open.chrome = open.done = false;
+  emit();
+
+  // chwilowe przycięcia (np. montowanie elementów) nie przeskakują animacji,
+  // tylko ją na moment wstrzymują
+  gsap.ticker.lagSmoothing(120, 33);
+
+  let finished = false;
+  let speedUp: gsap.core.Tween | null = null;
+
+  // Domyka scenę w stanie końcowym i oddaje stronę użytkownikowi.
+  // Wołane przez koniec osi czasu albo przez sprzątanie (HMR, odmontowanie),
+  // dzięki czemu scroll nigdy nie zostaje zablokowany.
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    speedUp?.kill();
+    gsap.ticker.lagSmoothing(0);
+    Object.assign(stage, FINAL);
+    openAll();
+    SKIP_EVENTS.forEach((e) => window.removeEventListener(e, skip));
+  };
+
+  const tl = gsap.timeline({ onComplete: finish });
+
+  // dowolna interakcja płynnie przyspiesza intro (rozpędzenie, nie skok)
+  function skip(e: Event) {
+    if (speedUp) return;
+    if (e.type === "keydown" && MODIFIERS.has((e as KeyboardEvent).key)) return;
+    speedUp = gsap.to(tl, {
+      timeScale: 6,
+      duration: 0.35,
+      ease: "power2.in",
+      overwrite: true,
+    });
+  }
+
+  if (MOBILE) buildMobileTimeline(tl);
+  else buildFullTimeline(tl);
 
   SKIP_EVENTS.forEach((e) =>
     window.addEventListener(e, skip, { passive: true }),
@@ -345,18 +396,45 @@ function playIntro(): () => void {
 
 /* ---------- 6. jedyne wejście dla app.tsx ---------- */
 
+// Pozycja na stronie (patrz scrollMemory.ts) jest wstrzykiwana z zewnątrz, żeby intro.ts
+// nie importował modułu, który sam zależy od intro.ts (useSmoothScroll).
+export type ScrollMemory = {
+  restore: () => Promise<void>; // zwykłe wejście: wróć w zapamiętane miejsce
+  forget: () => void; // pełne intro: zacznij od góry
+};
+
 // Startuje od razu po zamontowaniu strony (jedna klatka, bez żadnego czekania):
 // zdejmuje zasłonę i puszcza właściwy scenariusz. Zwraca funkcję sprzątającą
 // (do useEffect). Start w kolejnej klatce zamiast synchronicznie sprawia, że
 // podwójne wywołanie efektu w React StrictMode (dev) niczego nie psuje.
-export function startEntrance(): () => void {
+export function startEntrance(scroll?: ScrollMemory): () => void {
+  let cancelled = false;
   let stop = () => {};
+
   const raf = requestAnimationFrame(() => {
-    liftBoot(INTRO_PLAYS ? 0 : 0.9);
-    stop = INTRO_PLAYS ? playIntro() : playQuick();
-    refreshInBackground();
+    // znacznik do pomiaru: performance.getEntriesByName("entrance:start")[0].startTime
+    performance.mark("entrance:start");
+    if (INTRO_PLAYS) {
+      // pełne intro zawsze od góry, więc stara pozycja jest zapomniana;
+      // przy intro tło i tak jest czarne, więc zasłonę zdejmujemy od razu
+      scroll?.forget();
+      liftBoot(0);
+      stop = playIntro();
+      refreshInBackground();
+      return;
+    }
+    // zwykłe wejście: zasłona zostaje, dopóki strona nie wróci na zapamiętane miejsce
+    // (zwykle jedna klatka, maks. ok. 0,7 s, gdy strona jeszcze rośnie)
+    void (scroll ? scroll.restore() : Promise.resolve()).then(() => {
+      if (cancelled) return;
+      liftBoot(0.4);
+      stop = playQuick();
+      refreshInBackground();
+    });
   });
+
   return () => {
+    cancelled = true;
     cancelAnimationFrame(raf);
     stop();
   };

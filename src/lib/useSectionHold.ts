@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger } from "./gsap";
 import { MOTION } from "./motion";
+import { MOBILE } from "./device";
 
 // Kolejność odświeżania ScrollTriggerów musi odpowiadać kolejności sekcji na stronie
 // (od góry do dołu), bo każde zatrzymanie dodaje wysokość, od której zależy położenie
@@ -21,9 +22,13 @@ export function pagePriority(el: Element): number {
 const SPREAD = 1.8;
 const MIN_SPREAD = Math.PI / 2 + 0.05; // poniżej sekcja cofałaby się względem ekranu
 
+// Zatrzymania sekcji (transform sterowany scrollem) są wyłączone przy ograniczonym ruchu
+// oraz na telefonie: tam scroll jest natywny i każda sekcja jechałaby z opóźnieniem
+// względem palca. Bez zatrzymań nie ma też spacerów, więc strona jest krótsza.
 const prefersReducedMotion = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  MOBILE ||
+  (typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
 // Ile pikseli scrolla dodaje zatrzymanie (strona robi się o tyle dłuższa, tak jak
 // wcześniej przy pinie). Bez ruchu (prefers-reduced-motion) nie ma zatrzymania wcale.
