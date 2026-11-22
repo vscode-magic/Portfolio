@@ -2,6 +2,27 @@ import { useEffect, useRef } from "react";
 import { gsap } from "../lib/gsap";
 import { stage } from "../lib/intro";
 
+/* =========================================================================
+   AmbientMobile: tło na telefon.
+
+   Wersja na komputer (ambient.tsx) liczy w JavaScript każdą klatkę: setki cząstek na
+   płótnie, sprężyny, paralaksa. Na telefonie główny wątek jest wtedy zajęty także przy
+   scrollu, więc tło szarpie i wygląda, jakby chodziło na 10 fps.
+
+   Tu jest odwrotnie: wszystko jest NARYSOWANE RAZ na kilku małych płótnach (miękkie
+   plamy światła, smugi, trzy warstwy rozmytych krążków bokeh), a ruch robi sam CSS
+   (transform i opacity w @keyframes, patrz index.css). Takie animacje działają na
+   kompozytorze GPU, niezależnie od głównego wątku, więc są płynne (60 fps) nawet w
+   trakcie scrolla, a JavaScript w czasie normalnej pracy strony nie robi nic.
+
+   Tło jest przypięte do ekranu (fixed, stała wysokość 100lvh, więc nie skacze przy
+   chowaniu paska adresu) i nie reaguje na przewijanie. Porusza się samo: plamy światła
+   i smugi dryfują, a cząstki bokeh powoli płyną w górę (trzy warstwy o różnej prędkości)
+   i zapętlają się bez szwu.
+   JS działa wyłącznie podczas intro: przesuwa przezroczystość czterech grup warstw
+   według wspólnego `stage` (patrz lib/intro.ts), a po jego końcu odpina się od tickera.
+   ========================================================================= */
+
 const BASE = "#0d111c";
 
 const COLORS = {
@@ -95,10 +116,11 @@ function bokeh(
 }
 
 // Trzy warstwy głębi: [liczba, promień min, promień max, jasność, miękkość brzegu]
+// (prędkość płynięcia każdej warstwy jest w index.css: .amb-flow-1/2/3)
 const DUST_LAYERS: [number, number, number, number, number][] = [
-  [16, 7, 15, 0.34, 0.35], // daleko: małe, wyraźniejsze
-  [11, 14, 28, 0.3, 0.55], // środek
-  [6, 26, 46, 0.24, 0.85], // blisko: duże i bardzo miękkie
+  [18, 7, 15, 0.34, 0.35], // daleko: małe, wyraźniejsze, płyną najwolniej
+  [12, 14, 28, 0.3, 0.55], // środek
+  [7, 26, 46, 0.24, 0.85], // blisko: duże i bardzo miękkie, płyną najszybciej
 ];
 
 // Smugi światła z lewego górnego rogu: [kąt od pionu (stopnie), szerokość/H, jasność, kolor]
@@ -124,18 +146,29 @@ export function AmbientMobile() {
   const light = useRef<HTMLCanvasElement>(null);
   const rays = useRef<HTMLCanvasElement>(null);
 
-  const dust0 = useRef<HTMLCanvasElement>(null);
-  const dust1 = useRef<HTMLCanvasElement>(null);
-  const dust2 = useRef<HTMLCanvasElement>(null);
+  // po dwa kafle na warstwę
+  const dust00 = useRef<HTMLCanvasElement>(null);
+  const dust01 = useRef<HTMLCanvasElement>(null);
+  const dust10 = useRef<HTMLCanvasElement>(null);
+  const dust11 = useRef<HTMLCanvasElement>(null);
+  const dust20 = useRef<HTMLCanvasElement>(null);
+  const dust21 = useRef<HTMLCanvasElement>(null);
 
   // ---- rysowanie (raz, oraz po zmianie szerokości, np. obrocie telefonu) ----
   useEffect(() => {
     const el = root.current;
     if (!el) return;
 
-    const dustRefs = [dust0, dust1, dust2];
-    let lastW = 0;
+    const dustPairs: [
+      React.RefObject<HTMLCanvasElement | null>,
+      React.RefObject<HTMLCanvasElement | null>,
+    ][] = [
+      [dust00, dust01],
+      [dust10, dust11],
+      [dust20, dust21],
+    ];
 
+    let lastW = 0;
     const paint = () => {
       const W = el.clientWidth;
       const H = el.clientHeight;
@@ -201,26 +234,34 @@ export function AmbientMobile() {
         }
       }
 
-      // trzy warstwy bokeh (każda płótno nieco większe od ekranu, żeby dryf nie odsłaniał krawędzi)
+      // trzy warstwy bokeh. Każda to kafel o wysokości ekranu, narysowany raz i wstawiony
+      // dwa razy jeden pod drugim; CSS przesuwa je o dokładnie jeden kafel w górę i zaczyna od
+      // nowa, więc ruch zapętla się bez szwu. Żeby łączenie kafli było niewidoczne, krążki
+      // przy górnej i dolnej krawędzi są rysowane także po drugiej stronie (zawijanie).
       DUST_LAYERS.forEach(([count, rMin, rMax, alpha, soft], i) => {
-        const canvas = dustRefs[i]?.current;
-        if (!canvas) return;
+        const pair = dustPairs[i];
+        const first = pair?.[0].current;
+        const second = pair?.[1].current;
+        if (!first || !second) return;
         const DW = W * 1.16;
-        const DH = H * 1.12;
-        const g = setup(canvas, DW, DH, 0.6);
+        const DH = H;
+        const g = setup(first, DW, DH, 0.6);
         const rand = rng(1000 + i * 77);
         for (let n = 0; n < count; n++) {
           const r = rMin + (rMax - rMin) * rand() ** 1.4;
-          bokeh(
-            g,
-            rand() * DW,
-            rand() * DH,
-            r,
-            pickHue(rand),
-            alpha * (0.55 + 0.45 * rand()),
-            soft,
-          );
+          const x = rand() * DW;
+          const y = rand() * DH;
+          const rgb = pickHue(rand);
+          const a = alpha * (0.55 + 0.45 * rand());
+          for (const dy of [0, -DH, DH]) {
+            if (y + dy + r < 0 || y + dy - r > DH) continue;
+            bokeh(g, x, y + dy, r, rgb, a, soft);
+          }
         }
+        // drugi kafel to kopia pierwszego
+        second.width = first.width;
+        second.height = first.height;
+        second.getContext("2d")!.drawImage(first, 0, 0);
       });
     };
 
@@ -297,11 +338,26 @@ export function AmbientMobile() {
         <canvas ref={rays} className="amb-rays" />
       </div>
 
-      {/* rozmyte krążki bokeh w trzech warstwach głębi */}
+      {/* rozmyte krążki bokeh w trzech warstwach głębi: płyną w górę, lekko kołysząc się na boki */}
       <div ref={motesGroup} className="absolute inset-0" style={{ opacity: 0 }}>
-        <canvas ref={dust0} className="amb-dust amb-dust-1" />
-        <canvas ref={dust1} className="amb-dust amb-dust-2" />
-        <canvas ref={dust2} className="amb-dust amb-dust-3" />
+        <div className="amb-sway amb-sway-1">
+          <div className="amb-flow amb-flow-1">
+            <canvas ref={dust00} />
+            <canvas ref={dust01} />
+          </div>
+        </div>
+        <div className="amb-sway amb-sway-2">
+          <div className="amb-flow amb-flow-2">
+            <canvas ref={dust10} />
+            <canvas ref={dust11} />
+          </div>
+        </div>
+        <div className="amb-sway amb-sway-3">
+          <div className="amb-flow amb-flow-3">
+            <canvas ref={dust20} />
+            <canvas ref={dust21} />
+          </div>
+        </div>
       </div>
 
       {/* winieta */}
